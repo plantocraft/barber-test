@@ -186,6 +186,39 @@ const Data = (() => {
     return sb;
   };
 
+  /* Supabase auth errors are terse and, in one case, actively
+     misleading: "Email not confirmed" sounds like the customer did
+     something wrong, when it actually means the PROJECT still has
+     email confirmation switched on. Translate the common ones. */
+  function explainAuthError(error) {
+    const msg = (error && error.message) || 'Something went wrong.';
+    const code = (error && error.code) || '';
+
+    if (/email not confirmed/i.test(msg) || code === 'email_not_confirmed') {
+      return 'This account has not been confirmed yet. The shop owner needs to turn off ' +
+             '"Confirm email" in Supabase (Authentication → Sign In / Providers → Email), ' +
+             'or confirm this user from Authentication → Users.';
+    }
+    if (/invalid login credentials/i.test(msg)) {
+      return 'Wrong email or password.';
+    }
+    if (/user already registered/i.test(msg)) {
+      return 'An account with that email already exists. Try signing in instead.';
+    }
+    if (/password should be at least/i.test(msg)) {
+      return 'Password is too short — use at least 6 characters.';
+    }
+    if (/email send rate limit|email rate limit/i.test(msg) || code === 'over_email_send_rate_limit') {
+      return 'Supabase has hit its built-in email limit (about 2 per hour on the free tier). ' +
+             'Turn off "Confirm email" in Authentication → Sign In / Providers → Email — ' +
+             'then no confirmation mail is sent and this stops happening.';
+    }
+    if (/rate limit|too many requests/i.test(msg)) {
+      return 'Too many attempts. Wait a minute and try again.';
+    }
+    return msg;
+  }
+
   /* Postgres row -> the shape the rest of the app expects */
   function fromRow(r) {
     const [date, clock] = r.starts_at.split('T');
@@ -212,13 +245,13 @@ const Data = (() => {
         email, password,
         options: { data: { full_name: fullName, phone } }
       });
-      if (error) return { ok: false, error: error.message };
+      if (error) return { ok: false, error: explainAuthError(error) };
       return { ok: true, user: { id: data.user?.id, email, fullName, phone } };
     },
 
     async signIn({ email, password }) {
       const { data, error } = await client().auth.signInWithPassword({ email, password });
-      if (error) return { ok: false, error: error.message };
+      if (error) return { ok: false, error: explainAuthError(error) };
       const meta = data.user.user_metadata || {};
       return {
         ok: true,

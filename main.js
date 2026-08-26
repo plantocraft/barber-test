@@ -138,6 +138,98 @@ function whatsappLink(phone, message) {
   return `https://wa.me/${clean}?text=${encodeURIComponent(message)}`;
 }
 
+/* ---------- calendar file ------------------------------------
+   The booking is already in the database, so the shop knows. What
+   the CUSTOMER needs is a reminder they'll actually see. An .ics
+   file drops the appointment straight into their phone calendar -
+   no account, no server, no email that might bounce.          */
+
+function icsFor(booking) {
+  const svc   = CONFIG.serviceById(booking.serviceId);
+  const mins  = (svc && svc.minutes) || CONFIG.serviceMinutes;
+  const start = slotDateTime(booking.date, booking.time);
+  const end   = new Date(start.getTime() + mins * 60000);
+
+  // Ghana is GMT year-round with no daylight saving, so local
+  // wall-clock time IS UTC. No conversion needed.
+  const stamp = d => d.getFullYear()
+    + String(d.getMonth() + 1).padStart(2, '0')
+    + String(d.getDate()).padStart(2, '0')
+    + 'T'
+    + String(d.getHours()).padStart(2, '0')
+    + String(d.getMinutes()).padStart(2, '0')
+    + '00Z';
+
+  const escape = s => String(s || '').replace(/([,;\\])/g, '\\$1').replace(/\n/g, '\\n');
+
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Cheerful Giver//Booking//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${booking.id}@cheerfulgiver`,
+    `DTSTAMP:${stamp(new Date())}`,
+    `DTSTART:${stamp(start)}`,
+    `DTEND:${stamp(end)}`,
+    `SUMMARY:${escape(booking.serviceName + ' — ' + CONFIG.shop.name)}`,
+    `LOCATION:${escape(CONFIG.shop.address)}`,
+    `DESCRIPTION:${escape(
+      `${booking.serviceName} · ${CONFIG.shop.currency}${booking.price}\n` +
+      `Booked for ${booking.customerName}\n` +
+      `Arrive 5 minutes early. More than 10 minutes late and the slot may go to a walk-in.\n` +
+      `Ref ${booking.id}`
+    )}`,
+    'BEGIN:VALARM',
+    'TRIGGER:-PT2H',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Haircut in 2 hours',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].map(foldIcsLine).join('\r\n');
+}
+
+/* RFC 5545: no line may exceed 75 octets. Longer ones are split and
+   continued with a leading space. Lenient clients cope without this;
+   strict ones reject the whole file, which would mean the button
+   silently doing nothing on somebody's phone. */
+function foldIcsLine(line) {
+  const bytes = new TextEncoder().encode(line);
+  if (bytes.length <= 75) return line;
+
+  const out = [];
+  let current = '';
+  let used = 0;
+
+  for (const char of line) {                    // iterate by code point
+    const size = new TextEncoder().encode(char).length;
+    if (used + size > (out.length ? 74 : 75)) { // continuation lines lose one octet to the space
+      out.push(current);
+      current = '';
+      used = 0;
+    }
+    current += char;
+    used += size;
+  }
+  if (current) out.push(current);
+
+  return out.join('\r\n ');
+}
+
+function downloadIcs(booking) {
+  const blob = new Blob([icsFor(booking)], { type: 'text/calendar;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `cheerful-giver-${booking.date}-${booking.time.replace(':', '')}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function bookingMessage(booking) {
   return [
     `*${CONFIG.shop.name} - Booking Confirmed*`,

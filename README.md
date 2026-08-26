@@ -55,7 +55,7 @@ nothing else. Every page reads from it.
 
 The site starts empty. Create accounts from `account.html`:
 
-- **Owner** — sign up with `owner@cheerfulgiver.com`. Any account using
+- **Owner** — sign up with the address in `ownerEmail`. Any account using
   that address sees the dashboard. The address is set by `ownerEmail`
   in `config.js`.
 - **Customer** — any other email.
@@ -104,12 +104,12 @@ because they need your account.
 Choose a region close to Ghana — **eu-west-1 (Ireland)** is the usual
 pick; it is far nearer to Accra than anything in the US.
 
-**2.** Open `sql/schema.sql` and change one line — the owner's real
+**2.** Open `schema.sql` and change one line — the owner's real
 email address:
 
 ```sql
 insert into public.staff (email)
-values ('owner@cheerfulgiver.com')   -- <-- put the real address here
+values ('you@example.com')   -- <-- put the real address here
 ```
 
 That table is what `is_staff()` checks, so it decides who can see the
@@ -120,7 +120,7 @@ file, and run it. It creates two tables, the availability view, the
 double-booking index and every security policy.
 
 **4.** From **Project Settings → API**, copy the Project URL and the
-`anon` public key into `js/config.js`, and flip the switch:
+`anon` public key into `config.js`, and flip the switch:
 
 ```js
 backend: 'supabase',
@@ -142,7 +142,7 @@ security, not secrecy of the key. Never put the `service_role` key in
 this project — that one bypasses every policy.
 
 **Supabase will flag `booked_slots` as a "security definer view".**
-That is deliberate, and `sql/schema.sql` explains why: the view exposes
+That is deliberate, and `schema.sql` explains why: the view exposes
 start times and nothing else, and it has to bypass the caller's RLS or
 signed-in customers would see everyone else's slots as free.
 
@@ -177,12 +177,12 @@ Then **Settings → Pages → Source: main / (root)**. The site appears at
 
 ## Photographs
 
-`img/` holds four free stock photos from Pexels, standing in until real
+The project folder holds four free stock photos from Pexels, standing in until real
 ones exist. **None of them are this shop.** Keep the filenames and you
 can swap them with no code changes:
 
 ```
-img/fade.jpg   img/lineup.jpg   img/beard.jpg   img/kids.jpg
+fade.jpg   lineup.jpg   beard.jpg   kids.jpg
 ```
 
 Roughly 4:5 crops, 60–100 KB each, 332 KB in total. Compress anything
@@ -190,7 +190,7 @@ you add — the audience is on Ghanaian mobile data.
 
 There is no photograph of the barber, by choice. Every image is of
 *work* — hands, clippers, a finished cut — so nothing on the page
-claims to be a particular person. `img/CREDITS.md` has the credits.
+claims to be a particular person. `CREDITS.md` has the credits.
 
 ---
 
@@ -199,5 +199,5 @@ claims to be a particular person. `img/CREDITS.md` has the credits.
 - Real address, phone and email in `config.js` (currently placeholders)
 - Real barber name, years, bio and quote in `config.js` (currently invented)
 - Automatic email confirmations — the confirmation screen currently
-  opens WhatsApp or the customer's mail app. Sending server-side would
-  need a Supabase Edge Function plus a mail provider
+  offers a calendar download and a WhatsApp message. Sending real email
+  would need a Supabase Edge Function plus a mail provider
