@@ -32,6 +32,12 @@ async function render() {
     'Hello, ' + (me.fullName || 'there').split(' ')[0];
   document.getElementById('account-email').textContent = me.email;
 
+  // The owner signs in through the same door as everyone else, then
+  // gets taken to the dashboard from here - so nobody has to know or
+  // remember the admin URL.
+  const ownerBar = document.getElementById('owner-shortcut');
+  if (ownerBar) ownerBar.hidden = !Data.isOwner(me);
+
   await renderBookings();
 }
 

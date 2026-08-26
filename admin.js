@@ -33,9 +33,6 @@ async function gate() {
   document.getElementById('admin-view').hidden  = !allowed;
   document.getElementById('signout-btn').hidden = !allowed;
 
-  const hint = document.getElementById('owner-hint');
-  if (hint) hint.textContent = 'Owner account: ' + CONFIG.ownerEmail;
-
   if (allowed) await loadWeek();
 }
 
