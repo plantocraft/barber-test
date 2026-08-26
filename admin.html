@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Cheerful Giver Unisex Salon</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-mode-banner>
+
+<header>
+  <div class="container navbar">
+    <a href="index.html" class="brand">
+      <strong>Cheerful Giver</strong>
+      <span>Dashboard</span>
+    </a>
+    <nav>
+      <ul class="nav-links">
+        <li><a href="index.html">Site</a></li>
+        <li><a href="booking.html">Book</a></li>
+        <li><a href="admin.html" class="active">Dashboard</a></li>
+      </ul>
+    </nav>
+    <div class="nav-right">
+      <button class="btn btn-ghost btn-sm" id="signout-btn" hidden>Sign out</button>
+      <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ---------- LOCKED ---------- -->
+<section id="locked-view" hidden style="padding-top:70px">
+  <div class="container">
+    <div class="auth-card">
+      <span class="eyebrow">Staff Only</span>
+      <h1 style="font-size:1.7rem;margin-bottom:24px">Owner sign in</h1>
+
+      <div class="alert" id="admin-alert"></div>
+
+      <form id="admin-login" novalidate>
+        <div class="field">
+          <label for="admin-email">Email</label>
+          <input type="email" id="admin-email" required autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="admin-password">Password</label>
+          <input type="password" id="admin-password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-solid btn-block">Sign in</button>
+      </form>
+
+      <p class="form-note" id="owner-hint"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- DASHBOARD ---------- -->
+<section id="admin-view" hidden style="padding-top:56px">
+  <div class="container">
+
+    <div class="admin-bar">
+      <div>
+        <span class="eyebrow">Dashboard</span>
+        <h1 style="font-size:clamp(1.7rem,4vw,2.4rem)" id="week-label">This week</h1>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" id="prev-week">&larr; Prev</button>
+        <button class="btn btn-ghost btn-sm" id="this-week">Today</button>
+        <button class="btn btn-ghost btn-sm" id="next-week">Next &rarr;</button>
+        <button class="btn btn-solid btn-sm" id="add-walkin">+ Walk-in</button>
+      </div>
+    </div>
+
+    <div class="admin-stats">
+      <div class="stat"><span>Booked this week</span><strong id="stat-booked">0</strong></div>
+      <div class="stat"><span>Expected revenue</span><strong id="stat-revenue">₵0</strong></div>
+      <div class="stat"><span>Slots still free</span><strong id="stat-free">0</strong></div>
+      <div class="stat"><span>Today</span><strong id="stat-today">0</strong></div>
+    </div>
+
+    <div class="week-scroll">
+      <div class="week-grid" id="week-grid"></div>
+    </div>
+
+    <p class="form-note">Scroll sideways to see the whole week. Tap any appointment to update it.</p>
+  </div>
+</section>
+
+<!-- ---------- APPOINTMENT MODAL ---------- -->
+<div class="modal-back" id="appt-modal">
+  <div class="modal">
+    <h3 id="appt-title">Appointment</h3>
+    <dl class="summary" style="border:0;padding:0;background:none;display:grid;grid-template-columns:auto 1fr;gap:10px 18px;margin:0 0 8px">
+      <dt style="font-size:0.68rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim)">Customer</dt>
+      <dd style="margin:0;text-align:right" id="appt-name">—</dd>
+      <dt style="font-size:0.68rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim)">Phone</dt>
+      <dd style="margin:0;text-align:right" id="appt-phone">—</dd>
+      <dt style="font-size:0.68rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim)">Service</dt>
+      <dd style="margin:0;text-align:right" id="appt-service">—</dd>
+      <dt style="font-size:0.68rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim)">Status</dt>
+      <dd style="margin:0;text-align:right" id="appt-status">—</dd>
+    </dl>
+    <p class="text-dim" style="font-size:0.88rem" id="appt-notes"></p>
+
+    <div class="modal-actions">
+      <a class="btn btn-ghost btn-sm" id="appt-whatsapp" target="_blank" rel="noopener">WhatsApp</a>
+      <a class="btn btn-ghost btn-sm" id="appt-call">Call</a>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" data-status="completed">Mark done</button>
+      <button class="btn btn-ghost btn-sm" data-status="no_show">No-show</button>
+      <button class="btn btn-danger btn-sm" data-status="cancelled">Cancel</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" data-close-modal>Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- WALK-IN MODAL ---------- -->
+<div class="modal-back" id="walkin-modal">
+  <div class="modal">
+    <h3>Add a walk-in</h3>
+    <p class="text-dim" style="margin-top:0;font-size:0.88rem">
+      Someone who came in off the street. Goes on the same calendar so the
+      online slots update straight away.
+    </p>
+
+    <div class="alert" id="walkin-alert"></div>
+
+    <form id="walkin-form" novalidate>
+      <div class="field">
+        <label for="walkin-name">Name</label>
+        <input type="text" id="walkin-name" required>
+      </div>
+      <div class="field">
+        <label for="walkin-phone">Phone (optional)</label>
+        <input type="tel" id="walkin-phone">
+      </div>
+      <div class="field">
+        <label for="walkin-service">Service</label>
+        <select id="walkin-service" required></select>
+      </div>
+      <div class="field">
+        <label for="walkin-date">Day</label>
+        <select id="walkin-date" required></select>
+      </div>
+      <div class="field">
+        <label for="walkin-time">Time</label>
+        <select id="walkin-time" required></select>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost btn-sm" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-solid btn-sm">Add booking</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ---------- BLOCK DAY MODAL ---------- -->
+<div class="modal-back" id="block-modal">
+  <div class="modal">
+    <h3 id="block-title">Close this day</h3>
+    <p class="text-dim" style="margin-top:0;font-size:0.88rem">
+      Nobody will be able to book. Existing appointments stay — cancel them yourself
+      so the customer gets told.
+    </p>
+    <div class="field">
+      <label for="block-reason">Reason (optional)</label>
+      <input type="text" id="block-reason" placeholder="Travelling, funeral, sick…">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" data-close-modal>Cancel</button>
+      <button class="btn btn-solid btn-sm" id="block-confirm">Close the day</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/slots.js"></script>
+<script src="js/data.js"></script>
+<script src="js/main.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/seed.js"></script>
+</body>
+</html>

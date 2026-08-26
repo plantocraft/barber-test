@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Services &amp; Prices — Cheerful Giver Unisex Salon</title>
+<meta name="description" content="Haircuts, fades, beard trims and kids cuts in Accra. Prices from ₵30.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-mode-banner>
+
+<header>
+  <div class="container navbar">
+    <a href="index.html" class="brand">
+      <strong>Cheerful Giver</strong>
+      <span>Unisex Salon</span>
+    </a>
+    <nav>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="services.html" class="active">Services</a></li>
+        <li><a href="booking.html">Book</a></li>
+        <li><a href="account.html" data-account-link>Login</a></li>
+      </ul>
+    </nav>
+    <div class="nav-right">
+      <a href="booking.html" class="btn btn-solid btn-sm">Book Now</a>
+      <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<section class="section-tight" style="padding-top:70px">
+  <div class="container">
+    <span class="eyebrow">Services</span>
+    <h1 style="font-size:clamp(2.4rem,7vw,4.4rem);max-width:16ch">The menu, and what it costs.</h1>
+    <p class="lead" style="margin-top:24px">
+      Straight pricing, no packages to decode. Every service is booked as a
+      25-minute slot with a 5-minute reset after it.
+    </p>
+  </div>
+</section>
+
+<section class="section-light" style="padding-top:60px">
+  <div class="container">
+    <div class="service-list" id="service-list"></div>
+    <div style="margin-top:44px;display:flex;gap:14px;flex-wrap:wrap">
+      <a href="booking.html" class="btn btn-dark">Book a chair</a>
+      <a href="#" data-tel class="btn btn-ghost" style="color:var(--text-ink);border-color:var(--line-soft)">Call the shop</a>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Good To Know</span>
+      <h2>Before you come in</h2>
+    </div>
+    <div class="grid-3">
+      <div class="step">
+        <div class="num">01</div>
+        <h3>Arrive 5 minutes early</h3>
+        <p>Slots run back to back. Turning up on the dot means your cut starts late.</p>
+      </div>
+      <div class="step">
+        <div class="num">02</div>
+        <h3>10-minute grace</h3>
+        <p>More than 10 minutes late and the barber may release your slot to a walk-in. No charge either way.</p>
+      </div>
+      <div class="step">
+        <div class="num">03</div>
+        <h3>Pay at the shop</h3>
+        <p>No deposit and no card needed to book. Settle up after the cut — cash or MoMo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <a href="index.html" class="brand">
+          <strong>Cheerful Giver</strong>
+          <span>Unisex Salon</span>
+        </a>
+        <p class="text-dim" style="margin-top:18px;max-width:34ch;font-size:0.9rem">
+          Barbering in Accra. Book your chair online, arrive, sit down.
+        </p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <ul>
+          <li><a href="services.html">Services</a></li>
+          <li><a href="booking.html">Book a chair</a></li>
+          <li><a href="account.html">My appointments</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Visit</h4>
+        <ul>
+          <li data-shop="address">Accra, Ghana</li>
+          <li data-shop="phonePretty">+233 00 000 0000</li>
+          <li data-shop="email">hello@cheerfulgiver.com</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; <span data-year>2026</span> Cheerful Giver Unisex Salon.</span>
+      <span>Accra, Ghana</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/slots.js"></script>
+<script src="js/data.js"></script>
+<script src="js/main.js"></script>
+<script src="js/home.js"></script>
+</body>
+</html>

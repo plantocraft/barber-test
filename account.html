@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Account — Cheerful Giver Unisex Salon</title>
+<meta name="description" content="Sign in to see, cancel or reschedule your appointments.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-mode-banner>
+
+
+<header>
+  <div class="container navbar">
+    <a href="index.html" class="brand">
+      <strong>Cheerful Giver</strong>
+      <span>Unisex Salon</span>
+    </a>
+    <nav>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="services.html">Services</a></li>
+        <li><a href="booking.html">Book</a></li>
+        <li><a href="account.html" class="active" data-account-link>Login</a></li>
+      </ul>
+    </nav>
+    <div class="nav-right">
+      <a href="booking.html" class="btn btn-solid btn-sm">Book Now</a>
+      <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ---------- SIGNED OUT ---------- -->
+<section id="auth-view" hidden style="padding-top:70px">
+  <div class="container">
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button data-tab="login" class="active">Sign in</button>
+        <button data-tab="signup">Create account</button>
+      </div>
+
+      <div class="alert" id="auth-alert"></div>
+
+      <!-- login -->
+      <form id="login-form" novalidate>
+        <div class="field">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" required autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-solid btn-block">Sign in</button>
+      </form>
+
+      <!-- signup -->
+      <form id="signup-form" novalidate hidden>
+        <div class="field">
+          <label for="signup-name">Full name</label>
+          <input type="text" id="signup-name" required autocomplete="name">
+        </div>
+        <div class="field">
+          <label for="signup-phone">Phone number</label>
+          <input type="tel" id="signup-phone" required placeholder="024 000 0000" autocomplete="tel">
+        </div>
+        <div class="field">
+          <label for="signup-email">Email</label>
+          <input type="email" id="signup-email" required autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="signup-password">Password</label>
+          <input type="password" id="signup-password" required minlength="6" autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-solid btn-block">Create account</button>
+        <p class="form-note">An account only exists so you can move or cancel your
+           own booking. Nothing else is stored.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- SIGNED IN ---------- -->
+<section id="account-view" hidden style="padding-top:62px">
+  <div class="container">
+
+    <div class="admin-bar">
+      <div>
+        <span class="eyebrow">My Account</span>
+        <h1 style="font-size:clamp(1.9rem,5vw,2.8rem)" id="hello">Welcome back</h1>
+        <p class="text-dim" style="margin:6px 0 0;font-size:0.9rem" id="account-email"></p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a href="booking.html" class="btn btn-solid btn-sm">New booking</a>
+        <button class="btn btn-ghost btn-sm" id="signout-btn">Sign out</button>
+      </div>
+    </div>
+
+    <h2 style="font-size:1.4rem;margin-bottom:20px">Upcoming</h2>
+    <div id="upcoming-list"></div>
+
+    <h2 style="font-size:1.4rem;margin:44px 0 20px">Past &amp; cancelled</h2>
+    <div id="past-list"></div>
+
+  </div>
+</section>
+
+<!-- ---------- RESCHEDULE MODAL ---------- -->
+<div class="modal-back" id="reschedule-modal">
+  <div class="modal">
+    <h3>Move your appointment</h3>
+    <p class="text-dim" style="margin-top:0;font-size:0.9rem" id="resched-current"></p>
+
+    <div class="date-strip" id="resched-dates" style="margin-top:20px"></div>
+    <div id="resched-slots" style="margin-top:20px"></div>
+
+    <div class="alert" id="resched-alert" style="margin-top:16px"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" data-close-modal>Cancel</button>
+      <button class="btn btn-solid btn-sm" id="resched-confirm" disabled>Move booking</button>
+    </div>
+  </div>
+</div>
+
+
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <a href="index.html" class="brand">
+          <strong>Cheerful Giver</strong>
+          <span>Unisex Salon</span>
+        </a>
+        <p style="margin-top:16px;max-width:36ch;font-size:0.88rem;color:var(--text-dim)">
+          A one-chair barbershop in <span data-shop="area">Osu</span>, Accra.
+          Book online, arrive, sit down.
+        </p>
+      </div>
+      <div>
+        <h4>Pages</h4>
+        <ul>
+          <li><a href="services.html">Services</a></li>
+          <li><a href="booking.html">Book a slot</a></li>
+          <li><a href="account.html">My appointments</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Find us</h4>
+        <ul>
+          <li data-shop="address">Osu, Accra</li>
+          <li><a href="#" data-tel data-shop="phonePretty">+233 00 000 0000</a></li>
+          <li><a href="#" data-mail data-shop="email">hello@cheerfulgiver.com</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; <span data-year>2026</span> Cheerful Giver Unisex Salon</span>
+      <span>Accra, Ghana</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/slots.js"></script>
+<script src="js/data.js"></script>
+<script src="js/main.js"></script>
+<script src="js/account.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# OS clutter
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Never commit a Supabase secret key. The publishable key in
+# js/config.js is fine - it is designed to be public, and the
+# database is protected by row-level security, not by hiding it.
+# A service_role / sb_secret_ key bypasses every policy.
+*.secret
+.env
+.env.*
