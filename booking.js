@@ -267,10 +267,12 @@ function showDone(booking) {
   document.getElementById('wa-link').href =
     whatsappLink(CONFIG.shop.phone, bookingMessage(booking));
 
-  const subject = `Booking confirmed - ${prettyDate(booking.date)} at ${prettyTime(booking.time)}`;
-  document.getElementById('mail-link').href =
-    `mailto:${CONFIG.shop.email}?subject=${encodeURIComponent(subject)}` +
-    `&body=${encodeURIComponent(bookingMessage(booking))}`;
+  // Calendar file, generated in the browser. No mail client, no
+  // server, and it lands somewhere the customer will actually look.
+  document.getElementById('ics-link').onclick = () => {
+    downloadIcs(booking);
+    toast('Added to your calendar.');
+  };
 
   toast('Booking confirmed.');
 }
