@@ -194,3 +194,159 @@ create policy "staff may read staff"
   on public.staff for select
   to authenticated
   using (public.is_staff());
+
+
+-- =============================================================
+-- TATTOO REQUESTS
+--
+-- Deliberately NOT part of the slot engine above. A haircut is a
+-- fixed 25 minutes so a live picker works; a tattoo might be a
+-- 30-minute flash piece or a multi-session sleeve, so it has the
+-- same variable-duration problem that got women's braiding cut
+-- from online booking (see README). Rather than reworking the
+-- availability engine, a tattoo "request" is just a lead: the
+-- owner reviews it and agrees a real time by phone or WhatsApp.
+-- That is why this table has no starts_at, no unique index, and
+-- no availability view — there is no slot to double-book.
+-- =============================================================
+
+create table if not exists public.tattoo_requests (
+  id             uuid primary key default gen_random_uuid(),
+  user_id        uuid references auth.users(id) on delete set null,
+  customer_name  text        not null,
+  customer_phone text        not null,
+  customer_email text,
+  description    text        not null,
+  placement      text        default '',
+  size_estimate  text        default '',
+  preferred_date date,
+  notes          text        default '',
+  status         text        not null default 'pending',
+  created_at     timestamptz not null default now(),
+
+  constraint tattoo_status_is_valid
+    check (status in ('pending', 'contacted', 'booked', 'declined'))
+);
+
+create index if not exists tattoo_requests_created_idx
+  on public.tattoo_requests (created_at desc);
+
+create index if not exists tattoo_requests_user_idx
+  on public.tattoo_requests (user_id);
+
+alter table public.tattoo_requests enable row level security;
+
+-- Anyone, signed in or not, may submit a request (guests included).
+create policy "anyone may request a tattoo"
+  on public.tattoo_requests for insert
+  to anon, authenticated
+  with check (true);
+
+-- Signed-in customers see their own requests. Staff see everything.
+-- Anonymous visitors get no select policy — there is no public
+-- availability to expose here, unlike bookings.
+create policy "customers read own, staff read all tattoo requests"
+  on public.tattoo_requests for select
+  to authenticated
+  using (user_id = auth.uid() or public.is_staff());
+
+-- Only staff move a request along (pending -> contacted -> booked/declined).
+-- Customers cannot edit or cancel their own request from the app;
+-- they follow up with the shop directly, same as agreeing the time did.
+create policy "staff update tattoo requests"
+  on public.tattoo_requests for update
+  to authenticated
+  using (public.is_staff())
+  with check (public.is_staff());
+
+revoke select on public.tattoo_requests from anon;
+revoke insert on public.tattoo_requests from anon;
+grant  insert (id, user_id, customer_name, customer_phone, customer_email,
+               description, placement, size_estimate, preferred_date, notes)
+  on public.tattoo_requests to anon;
+
+
+-- =============================================================
+-- GALLERY PHOTOS
+--
+-- So the shop can put its own work on the site without touching
+-- the code, GitHub, or Luc. The owner signs in, picks a photo off
+-- his phone, and it is live.
+--
+-- The photos shipped in the repo are NOT in this table. They stay
+-- as a floor: uploads render before them, so the page is never
+-- empty and a first upload never makes the gallery look thinner
+-- than it did yesterday.
+--
+-- Files live in a public Storage bucket rather than as bytes in a
+-- column. Postgres would hold a JPEG happily enough, but then
+-- every page load drags it through the database connection. A
+-- bucket gives an ordinary URL that an <img> tag fetches direct.
+--
+-- Re-runnable on purpose: unlike the policies above, these drop
+-- themselves first, because this section gets pasted into a
+-- project where the rest of the file has already been run.
+-- =============================================================
+
+create table if not exists public.gallery_photos (
+  id           uuid primary key default gen_random_uuid(),
+  category     text not null default 'tattoo',
+  label        text default '',
+  storage_path text not null,
+  created_at   timestamptz not null default now(),
+
+  constraint gallery_category_is_valid
+    check (category in ('tattoo', 'barber'))
+);
+
+create index if not exists gallery_photos_category_idx
+  on public.gallery_photos (category, created_at desc);
+
+alter table public.gallery_photos enable row level security;
+
+-- The gallery is the shop window. Everyone reads it, signed in or not.
+drop policy if exists "anyone may see the gallery" on public.gallery_photos;
+create policy "anyone may see the gallery"
+  on public.gallery_photos for select
+  to anon, authenticated
+  using (true);
+
+drop policy if exists "staff may add photos" on public.gallery_photos;
+create policy "staff may add photos"
+  on public.gallery_photos for insert
+  to authenticated
+  with check (public.is_staff());
+
+drop policy if exists "staff may remove photos" on public.gallery_photos;
+create policy "staff may remove photos"
+  on public.gallery_photos for delete
+  to authenticated
+  using (public.is_staff());
+
+
+-- ---------- the bucket the files themselves live in ------------
+-- public = true means the files are served from a plain URL with
+-- no token. That is correct here: these photos ARE the advertising.
+insert into storage.buckets (id, name, public)
+values ('gallery', 'gallery', true)
+on conflict (id) do nothing;
+
+drop policy if exists "anyone may view gallery files" on storage.objects;
+create policy "anyone may view gallery files"
+  on storage.objects for select
+  to anon, authenticated
+  using (bucket_id = 'gallery');
+
+-- Only the owner may put files in or take them out. Without this a
+-- stranger with the public anon key could fill the bucket.
+drop policy if exists "staff may upload gallery files" on storage.objects;
+create policy "staff may upload gallery files"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'gallery' and public.is_staff());
+
+drop policy if exists "staff may delete gallery files" on storage.objects;
+create policy "staff may delete gallery files"
+  on storage.objects for delete
+  to authenticated
+  using (bucket_id = 'gallery' and public.is_staff());

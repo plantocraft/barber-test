@@ -599,6 +599,10 @@ footer li a:hover { color: var(--text); }
 .badge-completed { color: var(--text-dim); }
 .badge-no_show   { color: var(--warn); border-color: rgba(227,179,65,0.4); }
 .badge-past      { color: var(--text-dim); }
+.badge-pending   { color: var(--warn); border-color: rgba(227,179,65,0.4); }
+.badge-contacted { color: var(--text); }
+.badge-booked    { color: var(--ok);   border-color: rgba(47,191,113,0.4); }
+.badge-declined  { color: var(--bad);  border-color: rgba(229,72,77,0.4); }
 
 /* ---------- admin ---------- */
 .admin-bar {
@@ -667,6 +671,20 @@ footer li a:hover { color: var(--text); }
 .appt .n { color: var(--text); display: block; margin-top: 2px; }
 .appt .s { color: var(--text-dim); font-size: 0.72rem; }
 .day-empty { color: var(--text-dim); font-size: 0.76rem; padding: 14px 4px; text-align: center; }
+
+/* gallery manager (admin) */
+.gallery-manage { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 700px) { .gallery-manage { grid-template-columns: repeat(4, 1fr); } }
+.gallery-tile {
+  border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--ink-2); overflow: hidden;
+}
+.gallery-tile img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; }
+.gallery-tile .cap {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 10px; font-size: 0.72rem; color: var(--text-dim);
+}
+.gallery-tile .cap span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* modal */
 .modal-back {

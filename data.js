@@ -30,7 +30,9 @@ const Data = (() => {
     bookings: 'cg_bookings',
     blocked:  'cg_blocked',
     users:    'cg_users',
-    session:  'cg_session'
+    session:  'cg_session',
+    tattoo:   'cg_tattoo_requests',
+    gallery:  'cg_gallery'
   };
 
   const read = (key, fallback) => {
@@ -169,6 +171,83 @@ const Data = (() => {
     async unblockDay(date) {
       write(LS.blocked, read(LS.blocked, []).filter(b => b.date !== date));
       return { ok: true };
+    },
+
+    /* ---- tattoo requests ----
+       A lead, not a slot - see schema.sql for why this stays
+       separate from the booking table instead of reusing it. */
+
+    async createTattooRequest(req) {
+      const list = read(LS.tattoo, []);
+      const record = {
+        ...req,
+        id: uid(),
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+      list.push(record);
+      write(LS.tattoo, list);
+      return { ok: true, request: record };
+    },
+
+    async getMyTattooRequests(userId) {
+      return read(LS.tattoo, [])
+        .filter(r => r.userId === userId)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+
+    async getAllTattooRequests() {
+      return read(LS.tattoo, [])
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+
+    async setTattooRequestStatus(id, status) {
+      const list = read(LS.tattoo, []);
+      const req  = list.find(r => r.id === id);
+      if (!req) return { ok: false, error: 'Request not found.' };
+      req.status = status;
+      write(LS.tattoo, list);
+      return { ok: true, request: req };
+    },
+
+    /* ---- gallery photos ----
+       Demo mode has no file storage, so the shrunk JPEG is kept as a
+       data URL. That works because the browser has already cut it to
+       ~120 KB; a raw phone photo would blow the 5 MB localStorage
+       quota on its own. */
+
+    async getGalleryPhotos(category) {
+      return read(LS.gallery, [])
+        .filter(p => !category || p.category === category)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+
+    async addGalleryPhoto({ category, label, blob }) {
+      const list = read(LS.gallery, []);
+      const record = {
+        id: uid(),
+        category,
+        label: label || '',
+        url: await blobToDataUrl(blob),
+        createdAt: new Date().toISOString()
+      };
+      list.push(record);
+
+      try {
+        write(LS.gallery, list);
+      } catch {
+        return {
+          ok: false,
+          error: 'This browser is out of storage for demo photos. ' +
+                 'Delete a few, or connect Supabase for real hosting.'
+        };
+      }
+      return { ok: true, photo: record };
+    },
+
+    async deleteGalleryPhoto(id) {
+      write(LS.gallery, read(LS.gallery, []).filter(p => p.id !== id));
+      return { ok: true };
     }
   };
 
@@ -232,6 +311,24 @@ const Data = (() => {
       time: clock.slice(0, 5),
       customerName: r.customer_name,
       customerPhone: r.customer_phone,
+      notes: r.notes,
+      status: r.status,
+      createdAt: r.created_at
+    };
+  }
+
+  /* Postgres row -> the shape the rest of the app expects */
+  function fromTattooRow(r) {
+    return {
+      id: r.id,
+      userId: r.user_id,
+      customerName: r.customer_name,
+      customerPhone: r.customer_phone,
+      customerEmail: r.customer_email,
+      description: r.description,
+      placement: r.placement,
+      sizeEstimate: r.size_estimate,
+      preferredDate: r.preferred_date,
       notes: r.notes,
       status: r.status,
       createdAt: r.created_at
@@ -355,6 +452,126 @@ const Data = (() => {
     async unblockDay(date) {
       const { error } = await client().from('blocked_days').delete().eq('date', date);
       return error ? { ok: false, error: error.message } : { ok: true };
+    },
+
+    /* ---- tattoo requests ---- */
+
+    async createTattooRequest(req) {
+      // Same reasoning as createBooking: anon has no select grant,
+      // so the id is generated here rather than read back.
+      const id = crypto.randomUUID();
+
+      const { error } = await client().from('tattoo_requests').insert({
+        id,
+        user_id:        req.userId || null,
+        customer_name:  req.customerName,
+        customer_phone: req.customerPhone,
+        customer_email: req.customerEmail || null,
+        description:    req.description,
+        placement:      req.placement || '',
+        size_estimate:  req.sizeEstimate || '',
+        preferred_date: req.preferredDate || null,
+        notes:          req.notes || ''
+        // status is NOT set here: anon has no insert grant on it,
+        // so the column default of 'pending' applies.
+      });
+
+      if (error) return { ok: false, error: error.message };
+      return { ok: true, request: { ...req, id, status: 'pending' } };
+    },
+
+    async getMyTattooRequests(userId) {
+      const { data, error } = await client()
+        .from('tattoo_requests').select('*').eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      if (error) { console.error(error); return []; }
+      return data.map(fromTattooRow);
+    },
+
+    async getAllTattooRequests() {
+      const { data, error } = await client()
+        .from('tattoo_requests').select('*').order('created_at', { ascending: false });
+      if (error) { console.error(error); return []; }
+      return data.map(fromTattooRow);
+    },
+
+    async setTattooRequestStatus(id, status) {
+      const { data, error } = await client()
+        .from('tattoo_requests').update({ status }).eq('id', id).select().single();
+      if (error) return { ok: false, error: error.message };
+      return { ok: true, request: fromTattooRow(data) };
+    },
+
+    /* ---- gallery photos ----
+       Two stores in step: the JPEG goes in the `gallery` bucket, a
+       row pointing at it goes in `gallery_photos`. Both writes are
+       staff-only at the database, not just hidden in the UI. */
+
+    async getGalleryPhotos(category) {
+      let query = client()
+        .from('gallery_photos').select('*')
+        .order('created_at', { ascending: false });
+
+      if (category) query = query.eq('category', category);
+
+      const { data, error } = await query;
+      if (error) { console.error(error); return []; }
+
+      const bucket = client().storage.from('gallery');
+      return data.map(r => ({
+        id: r.id,
+        category: r.category,
+        label: r.label,
+        storagePath: r.storage_path,
+        url: bucket.getPublicUrl(r.storage_path).data.publicUrl,
+        createdAt: r.created_at
+      }));
+    },
+
+    async addGalleryPhoto({ category, label, blob }) {
+      const path = `${category}/${crypto.randomUUID()}.jpg`;
+      const bucket = client().storage.from('gallery');
+
+      const { error: upErr } = await bucket.upload(path, blob, {
+        contentType: 'image/jpeg',
+        cacheControl: '31536000'          // the file never changes; let phones cache it for a year
+      });
+      if (upErr) return { ok: false, error: upErr.message };
+
+      const { data, error } = await client()
+        .from('gallery_photos')
+        .insert({ category, label: label || '', storage_path: path })
+        .select().single();
+
+      // The row is what the site reads, so a file with no row is
+      // invisible AND permanent. Clean it up rather than leak it.
+      if (error) {
+        await bucket.remove([path]);
+        return { ok: false, error: error.message };
+      }
+
+      return {
+        ok: true,
+        photo: {
+          id: data.id,
+          category: data.category,
+          label: data.label,
+          storagePath: data.storage_path,
+          url: bucket.getPublicUrl(data.storage_path).data.publicUrl,
+          createdAt: data.created_at
+        }
+      };
+    },
+
+    async deleteGalleryPhoto(id, storagePath) {
+      const { error } = await client().from('gallery_photos').delete().eq('id', id);
+      if (error) return { ok: false, error: error.message };
+
+      // Row first, file second: if the file delete fails the photo is
+      // already off the site, and the leftover is a wasted byte rather
+      // than a broken image.
+      if (storagePath) await client().storage.from('gallery').remove([storagePath]);
+      return { ok: true };
     }
   };
 

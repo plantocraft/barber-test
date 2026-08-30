@@ -22,15 +22,16 @@ local server instead.
 
 ---
 
-## The five pages
+## The six pages
 
 | Page | What it does |
 |---|---|
 | `index.html` | Homepage — hero, service menu, opening hours |
 | `services.html` | Full price list and shop policies |
+| `tattoo.html` | Tattoo **request** form — not a booking flow, see below |
 | `booking.html` | The booking flow: service → date → time → details |
-| `account.html` | Sign up / sign in, view, cancel, reschedule |
-| `admin.html` | Owner dashboard — week view, closures, walk-ins |
+| `account.html` | Sign up / sign in, view, cancel, reschedule; also lists tattoo requests |
+| `admin.html` | Owner dashboard — week view, closures, walk-ins, tattoo requests |
 
 ## The JavaScript
 
@@ -42,9 +43,75 @@ local server instead.
 | `main.js` | Shared nav, toasts, WhatsApp links |
 | `home.js` | Renders the service menu and hours table |
 | `booking.js` | The three-step booking flow |
-| `account.js` | Customer account, cancel, reschedule |
-| `admin.js` | Owner dashboard |
+| `tattoo.js` | The one-step tattoo request form |
+| `account.js` | Customer account, cancel, reschedule, own tattoo requests |
+| `admin.js` | Owner dashboard, including tattoo request follow-up |
 | `seed.js` | Demo data generator (local mode only) |
+
+---
+
+## Tattoo requests aren't bookings
+
+`tattoo.html` looks similar to `booking.html` but is deliberately **not**
+wired into the availability engine above. A haircut is a fixed 25
+minutes, which is what makes a live slot picker possible; a tattoo
+might be a 30-minute flash piece or a multi-session sleeve — the same
+variable-duration problem that already ruled women's braiding out of
+online booking.
+
+Rather than reworking `slots.js` to handle variable durations, a
+tattoo request is just a lead: the customer describes the idea, and
+the owner follows up by phone or WhatsApp to agree a real time. That
+shows up end to end:
+
+- `tattoo_requests` is its own table (`schema.sql`), with no
+  `starts_at`, no unique index, and no availability view — there is
+  no slot to double-book.
+- Status moves `pending → contacted → booked/declined`, set only by
+  staff (customers can't edit their own request once sent).
+- The admin dashboard lists requests separately from the week grid,
+  with WhatsApp/call links to start the follow-up.
+- The customer's account page shows their requests read-only — no
+  cancel/reschedule, because there's no slot to move.
+
+---
+
+## The shop adds its own photos
+
+The owner should never have to message Luc to get a photo on the site.
+The dashboard has a **Gallery** panel: pick a photo off the phone,
+choose whether it belongs on the tattoo page or the home page, upload.
+It is live immediately.
+
+Three things make that work without a server:
+
+**The browser shrinks the photo first.** A photo off a phone is 3–4 MB
+and 4000px wide. `resizeImageFile()` in `main.js` cover-crops it to
+the same 4:5 shape the rest of the site uses and re-encodes it at
+800×1000 — roughly 120 KB. That runs on the owner's own phone, so it
+costs his data to send *less*, not more, and no image library or paid
+Edge Function is involved. The upload modal previews the actual crop,
+so nothing is a surprise after it is already public.
+
+**Files go in a Storage bucket, not a column.** Postgres would store a
+JPEG happily, but then every page load drags it through the database
+connection. The `gallery` bucket gives a plain URL an `<img>` fetches
+directly, cached for a year.
+
+**Uploads render before the built-in photos, never instead of them.**
+The four tattoo photos and four barbering photos in the repo are not
+rows in the table — they are the floor. So the page is never empty,
+and the first upload never makes the gallery look thinner than it did
+the day before. To retire a built-in photo, delete its `<div class="shot">`
+from the markup.
+
+Both writes are staff-only *at the database* (`is_staff()` on both the
+table and `storage.objects`), not merely hidden in the UI — otherwise
+anyone holding the public anon key could fill the bucket.
+
+In demo mode there is no bucket, so the shrunk JPEG is kept as a data
+URL in `localStorage`. That only works because it has already been cut
+to ~120 KB; a raw phone photo would blow the 5 MB quota by itself.
 
 Changing a price or an opening hour means editing `config.js` and
 nothing else. Every page reads from it.

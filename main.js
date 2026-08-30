@@ -42,6 +42,11 @@ function initShopDetails() {
     a.href = CONFIG.barber.instagram;
   });
 
+  document.querySelectorAll('[data-tattoo]').forEach(el => {
+    const key = el.dataset.tattoo;
+    if (CONFIG.tattooArtist[key] !== undefined) el.textContent = CONFIG.tattooArtist[key];
+  });
+
   const year = document.querySelector('[data-year]');
   if (year) year.textContent = new Date().getFullYear();
 
@@ -244,4 +249,111 @@ function bookingMessage(booking) {
     '',
     'Please arrive 5 minutes early. Slots are released 10 minutes after the start time.'
   ].join('\n');
+}
+
+/* ---------- gallery photos -----------------------------------
+   A photo straight off a phone is 3-4 MB and 4000px wide. Uploading
+   that raw would cost the barber his own data to send it, and every
+   visitor theirs to load it. So the browser crops and shrinks it
+   first, to the same 4:5 shape the rest of the site uses.
+
+   This runs on the owner's phone, not a server: no image library,
+   no Edge Function, nothing to pay for.                          */
+
+function resizeImageFile(file, targetW = 800, targetH = 1000, quality = 0.78) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) {
+      reject(new Error('Pick an image file.'));
+      return;
+    }
+
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+
+      // Cover-crop: fill the frame, never letterbox.
+      const targetRatio = targetW / targetH;
+      const srcRatio    = img.width / img.height;
+      let sx, sy, sw, sh;
+
+      if (srcRatio > targetRatio) {
+        sh = img.height;
+        sw = Math.round(sh * targetRatio);
+        sx = Math.round((img.width - sw) / 2);
+        sy = 0;
+      } else {
+        sw = img.width;
+        sh = Math.round(sw / targetRatio);
+        sx = 0;
+        // Bias upward: in a photo of a person the subject sits high,
+        // and a centred crop cuts heads off.
+        sy = Math.round((img.height - sh) * 0.25);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width  = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
+
+      canvas.toBlob(
+        blob => blob ? resolve(blob) : reject(new Error('Could not process that image.')),
+        'image/jpeg',
+        quality
+      );
+    };
+
+    // Most often an iPhone HEIC that this browser cannot decode.
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Could not read that image. Try saving it as a JPEG first.'));
+    };
+
+    img.src = url;
+  });
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Could not read that image.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+/* Uploaded photos render BEFORE the ones shipped in the repo, so the
+   gallery never looks emptier after an upload than it did before. */
+async function renderGalleryInto(row, category) {
+  if (!row) return;
+
+  const photos = await Data.getGalleryPhotos(category);
+  if (!photos.length) return;          // built-in tiles carry the page
+
+  row.insertAdjacentHTML('afterbegin', photos.map(p => `
+    <div class="shot" data-label="${esc(p.label || '')}">
+      <img src="${esc(p.url)}" alt="${esc(p.label || 'Recent work from the shop')}"
+           width="800" height="1000" loading="lazy">
+    </div>`).join(''));
+}
+
+/* Tattoo requests have no slot to confirm, so this reads as a
+   hand-off line rather than a receipt - it's what starts the
+   phone/WhatsApp conversation that actually books the session. */
+function tattooRequestMessage(req) {
+  return [
+    `*${CONFIG.shop.name} - Tattoo Request*`,
+    '',
+    `Name:      ${req.customerName}`,
+    `Idea:      ${req.description}`,
+    req.placement     ? `Placement: ${req.placement}` : null,
+    req.sizeEstimate  ? `Size:      ${req.sizeEstimate}` : null,
+    req.preferredDate ? `Preferred: ${prettyDate(req.preferredDate)}` : null,
+    '',
+    `Ref: ${req.id}`,
+    '',
+    'This is a request, not a confirmed booking - the shop will follow up to agree a time.'
+  ].filter(line => line !== null).join('\n');
 }

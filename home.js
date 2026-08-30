@@ -6,6 +6,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   renderServiceList();
   renderHoursTable();
+  renderGalleryInto(document.querySelector('.shot-row'), 'barber');
 });
 
 function renderServiceList() {

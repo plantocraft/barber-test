@@ -87,6 +87,31 @@
     </div>
 
     <p class="form-note">Scroll sideways to see the whole week. Tap any appointment to update it.</p>
+
+    <div class="admin-bar" style="margin-top:56px">
+      <div>
+        <span class="eyebrow">Tattoo</span>
+        <h2 style="font-size:clamp(1.4rem,3vw,1.9rem)" id="tattoo-requests-label">Requests</h2>
+      </div>
+    </div>
+    <div id="tattoo-requests-list"></div>
+    <p class="form-note">
+      These are leads, not confirmed slots — they don't touch the week view above.
+      Follow up, then mark where each one stands.
+    </p>
+
+    <div class="admin-bar" style="margin-top:56px">
+      <div>
+        <span class="eyebrow">Gallery</span>
+        <h2 style="font-size:clamp(1.4rem,3vw,1.9rem)" id="gallery-label">Photos</h2>
+      </div>
+      <button class="btn btn-solid btn-sm" id="add-photo">+ Add photo</button>
+    </div>
+    <div id="gallery-list"></div>
+    <p class="form-note">
+      Photos you add here go straight onto the site — no code, no waiting.
+      They appear before the ones built into the site, newest first.
+    </p>
   </div>
 </section>
 
@@ -157,6 +182,44 @@
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost btn-sm" data-close-modal>Cancel</button>
         <button type="submit" class="btn btn-solid btn-sm">Add booking</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ---------- ADD PHOTO MODAL ---------- -->
+<div class="modal-back" id="photo-modal">
+  <div class="modal">
+    <h3>Add a photo</h3>
+    <p class="text-dim" style="margin-top:0;font-size:0.88rem">
+      Take it on your phone and pick it here. It gets cropped and shrunk
+      automatically before it uploads, so it won't eat your data.
+    </p>
+
+    <div class="alert" id="photo-alert"></div>
+
+    <form id="photo-form" novalidate>
+      <div class="field">
+        <label for="photo-file">Photo</label>
+        <input type="file" id="photo-file" accept="image/*" required>
+      </div>
+      <div class="field">
+        <label for="photo-category">Where it goes</label>
+        <select id="photo-category" required>
+          <option value="tattoo">Tattoo page</option>
+          <option value="barber">Home page &mdash; the work</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="photo-label">Short label (optional)</label>
+        <input type="text" id="photo-label" maxlength="40" placeholder="Fine line, skin fade&hellip;">
+      </div>
+
+      <div id="photo-preview"></div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost btn-sm" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-solid btn-sm" id="photo-submit">Upload</button>
       </div>
     </form>
   </div>
