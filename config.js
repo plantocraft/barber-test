@@ -10,37 +10,37 @@ const CONFIG = {
     name:       'Cheerful Giver',
     subtitle:   'Unisex Salon',
     city:       'Accra, Ghana',
-    area:       'Osu',                     // TODO: real neighbourhood
-    address:    'Osu, Accra',              // TODO: exact street from the owner
-    phone:      '+233000000000',           // TODO: real number
-    phonePretty:'+233 00 000 0000',
+    address:    '105 King Takie Tawiah Ave, Accra',
+    // `phone` is the machine-readable one: it feeds tel: links and,
+    // after normalising, WhatsApp. Full international form so it also
+    // works when someone opens the site from outside Ghana.
+    phone:      '+233200074673',
+    // `phonePretty` is only ever displayed. Local form, because that
+    // is what a customer in Accra recognises and can dial as-is.
+    phonePretty:'020 007 4673',
+    countryCode:'233',                     // Ghana. Used to normalise numbers for wa.me
     email:      'hello@cheerfulgiver.com', // TODO: real email
     instagram:  '#',
-    currency:   '₵'
-  },
+    currency:   '₵',
 
-  /* --- The barber --------------------------------------------
-     A one-chair shop sells a person, not a brand. Every one of
-     these is a PLACEHOLDER until Luc gets the real details from
-     the shop - especially the name. */
-  barber: {
-    name:      'Kwame',                    // TODO: real name
-    role:      'Barber & Owner',
-    years:     12,                         // TODO: real number
-    quote:     'If you leave the chair and don’t look in every mirror on the way home, I have not finished.',
-    bio:       'Cutting in Accra since he was seventeen. Known for fades that stay sharp into the second week, and for taking his time on a line-up that most shops rush.',
-    instagram: '#'                         // TODO: real handle
+    /* Google Maps embed for the real listing. Taken from
+       Maps -> Share -> Embed a map, which needs no API key and no
+       billing account. Only the src is kept: the width, height and
+       inline border from Google's snippet are handled in the CSS so
+       the map can be responsive.
+
+       Moving shop? Replace this one line. */
+    mapEmbed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3970.480465370635!2d-0.2543857246925598!3d5.643399394337838!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xfdf99a3d65d07c9%3A0x43c5d41b710d8259!2sCheerful%20Giver%20Unisex%20Salon!5e0!3m2!1sen!2sgh!4v1788103732027!5m2!1sen!2sgh'
   },
 
   /* --- Tattoo (request-only, not part of the slot engine) -----
-     A tattoo doesn't fit the fixed 25-minute grid above - see
-     schema.sql for why. This is a lead, not a bookable
-     service, so there is no `minutes` or live slot picker. Same
-     placeholder caveat as `barber` - fill in or delete if the
-     shop doesn't end up offering this. */
+     A tattoo doesn't fit the fixed 25-minute grid below - see
+     schema.sql for why. This is a lead, not a bookable service,
+     so there is no `minutes` or live slot picker.
+
+     Deliberately says nothing about WHO does the work: the site
+     sells the shop and the craft, not a named person. */
   tattooArtist: {
-    name:  'TBC',                          // TODO: real name, or drop this section entirely
-    years: 5,                              // TODO: real number
     blurb: 'Every idea starts as a short conversation about placement, size and style - ' +
            'the exact price and time get agreed once that’s clear, not from a price list.'
   },
