@@ -32,6 +32,19 @@ const CONFIG = {
     instagram: '#'                         // TODO: real handle
   },
 
+  /* --- Tattoo (request-only, not part of the slot engine) -----
+     A tattoo doesn't fit the fixed 25-minute grid above - see
+     schema.sql for why. This is a lead, not a bookable
+     service, so there is no `minutes` or live slot picker. Same
+     placeholder caveat as `barber` - fill in or delete if the
+     shop doesn't end up offering this. */
+  tattooArtist: {
+    name:  'TBC',                          // TODO: real name, or drop this section entirely
+    years: 5,                              // TODO: real number
+    blurb: 'Every idea starts as a short conversation about placement, size and style - ' +
+           'the exact price and time get agreed once that’s clear, not from a price list.'
+  },
+
   /* --- Trading hours -----------------------------------------
      Index = JS day number (0 = Sunday … 6 = Saturday).
      null  = closed all day.

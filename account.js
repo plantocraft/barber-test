@@ -39,6 +39,7 @@ async function render() {
   if (ownerBar) ownerBar.hidden = !Data.isOwner(me);
 
   await renderBookings();
+  await renderTattooRequests();
 }
 
 /* ---------- auth ---------- */
@@ -161,6 +162,36 @@ function bookingCard(b, actionable) {
         <button class="btn btn-ghost btn-sm" data-reschedule="${b.id}">Reschedule</button>
         <button class="btn btn-danger btn-sm" data-cancel="${b.id}">Cancel</button>
       </div>` : ''}
+    </div>`;
+}
+
+/* ---------- tattoo requests ----------
+   Read-only here: there's no slot to cancel or reschedule, just a
+   status the shop moves along after they've followed up. */
+
+async function renderTattooRequests() {
+  const host = document.getElementById('tattoo-list');
+  if (!host) return;
+
+  const requests = await Data.getMyTattooRequests(me.id);
+
+  host.innerHTML = requests.length
+    ? requests.map(tattooCard).join('')
+    : `<div class="empty-day">No tattoo requests yet.
+         <a href="tattoo.html" style="text-decoration:underline">Send one</a>.</div>`;
+}
+
+function tattooCard(r) {
+  return `
+    <div class="booking-card">
+      <div>
+        <div class="when">${esc(r.description.slice(0, 60))}${r.description.length > 60 ? '…' : ''}</div>
+        <div class="what">
+          ${r.placement ? esc(r.placement) + ' &middot; ' : ''}${r.sizeEstimate ? esc(r.sizeEstimate) : 'Size TBC'}
+          &middot; <span class="badge badge-${r.status}">${r.status}</span>
+        </div>
+        <div class="what">Sent ${prettyDate(r.createdAt.slice(0, 10))}</div>
+      </div>
     </div>`;
 }
 

@@ -10,12 +10,15 @@ let bookings = [];
 let blocked  = [];
 let openAppt = null;
 let blockDate = null;
+let tattooRequests = [];
+let galleryPhotos = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   wireLogin();
   wireWeekNav();
   wireModals();
   wireWalkin();
+  wireGallery();
   await gate();
 });
 
@@ -33,7 +36,11 @@ async function gate() {
   document.getElementById('admin-view').hidden  = !allowed;
   document.getElementById('signout-btn').hidden = !allowed;
 
-  if (allowed) await loadWeek();
+  if (allowed) {
+    await loadWeek();
+    await loadTattooRequests();
+    await loadGallery();
+  }
 }
 
 function wireLogin() {
@@ -327,4 +334,187 @@ function fillWalkinTimes() {
     .filter(s => s.available)
     .map(s => `<option value="${s.time}">${s.pretty}</option>`)
     .join('');
+}
+
+/* ---------- tattoo requests ----------------------------------
+   Leads, not slots - deliberately outside the week grid above.
+   See schema.sql for why they don't share the bookings table. */
+
+async function loadTattooRequests() {
+  tattooRequests = await Data.getAllTattooRequests();
+  renderTattooRequests();
+}
+
+function renderTattooRequests() {
+  const host  = document.getElementById('tattoo-requests-list');
+  const label = document.getElementById('tattoo-requests-label');
+  if (!host) return;
+
+  const pending = tattooRequests.filter(r => r.status === 'pending').length;
+  if (label) label.textContent = 'Requests' + (pending ? ` (${pending} pending)` : '');
+
+  if (tattooRequests.length === 0) {
+    host.innerHTML = '<div class="empty-day">No tattoo requests yet.</div>';
+    return;
+  }
+
+  host.innerHTML = tattooRequests.map(r => {
+    const followUp = `Hi ${r.customerName}, this is ${CONFIG.shop.name}. Following up on your ` +
+      `tattoo idea: "${r.description}". When's good to talk it through?`;
+
+    return `
+    <div class="booking-card">
+      <div>
+        <div class="when">${esc(r.customerName)} &middot; <span class="badge badge-${r.status}">${r.status}</span></div>
+        <div class="what">${esc(r.description)}</div>
+        <div class="what">
+          ${r.placement ? esc(r.placement) + ' &middot; ' : ''}${r.sizeEstimate ? esc(r.sizeEstimate) : 'Size TBC'}
+          ${r.preferredDate ? ' &middot; wants ' + prettyDate(r.preferredDate) : ''}
+        </div>
+        ${r.notes ? `<div class="what">Note: ${esc(r.notes)}</div>` : ''}
+      </div>
+      <div class="booking-actions">
+        <a class="btn btn-ghost btn-sm" href="${esc(whatsappLink(r.customerPhone, followUp))}" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="btn btn-ghost btn-sm" href="tel:${esc(r.customerPhone)}">Call</a>
+        ${r.status !== 'contacted' ? `<button class="btn btn-ghost btn-sm" data-tattoo-status="${r.id}:contacted">Mark contacted</button>` : ''}
+        ${r.status !== 'booked' ? `<button class="btn btn-ghost btn-sm" data-tattoo-status="${r.id}:booked">Mark booked</button>` : ''}
+        ${r.status !== 'declined' ? `<button class="btn btn-danger btn-sm" data-tattoo-status="${r.id}:declined">Decline</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  host.querySelectorAll('[data-tattoo-status]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const [id, status] = btn.dataset.tattooStatus.split(':');
+      const result = await Data.setTattooRequestStatus(id, status);
+      if (!result.ok) { toast(result.error); return; }
+      toast('Marked ' + status + '.');
+      await loadTattooRequests();
+    });
+  });
+}
+
+/* ---------- gallery ------------------------------------------
+   The whole point of this panel: the shop puts its own work on the
+   site without going near the code. */
+
+async function loadGallery() {
+  galleryPhotos = await Data.getGalleryPhotos();
+  renderGallery();
+}
+
+function renderGallery() {
+  const host  = document.getElementById('gallery-list');
+  const label = document.getElementById('gallery-label');
+  if (!host) return;
+
+  if (label) {
+    label.textContent = galleryPhotos.length
+      ? `Photos (${galleryPhotos.length})`
+      : 'Photos';
+  }
+
+  if (galleryPhotos.length === 0) {
+    host.innerHTML = '<div class="empty-day">No photos added yet. ' +
+      'The site is showing the ones built into it.</div>';
+    return;
+  }
+
+  host.innerHTML = '<div class="gallery-manage">' + galleryPhotos.map(p => `
+    <div class="gallery-tile">
+      <img src="${esc(p.url)}" alt="${esc(p.label || 'Gallery photo')}" loading="lazy">
+      <div class="cap">
+        <span>${esc(p.label || (p.category === 'barber' ? 'Home page' : 'Tattoo page'))}</span>
+        <button class="btn btn-danger btn-sm" style="padding:5px 10px;font-size:0.6rem"
+                data-photo-delete="${esc(p.id)}">Remove</button>
+      </div>
+    </div>`).join('') + '</div>';
+
+  host.querySelectorAll('[data-photo-delete]').forEach(btn => {
+    btn.addEventListener('click', () => deletePhoto(btn.dataset.photoDelete));
+  });
+}
+
+async function deletePhoto(id) {
+  const photo = galleryPhotos.find(p => p.id === id);
+  if (!photo) return;
+  if (!confirm('Remove this photo from the site? This cannot be undone.')) return;
+
+  const result = await Data.deleteGalleryPhoto(id, photo.storagePath);
+  if (!result.ok) { toast(result.error); return; }
+
+  toast('Photo removed.');
+  await loadGallery();
+}
+
+function wireGallery() {
+  const modal  = document.getElementById('photo-modal');
+  const form   = document.getElementById('photo-form');
+  const addBtn = document.getElementById('add-photo');
+  if (!modal || !form || !addBtn) return;
+
+  const alert   = document.getElementById('photo-alert');
+  const fileIn  = document.getElementById('photo-file');
+  const preview = document.getElementById('photo-preview');
+
+  addBtn.addEventListener('click', () => {
+    form.reset();
+    clearAlert(alert);
+    preview.innerHTML = '';
+    modal.classList.add('open');
+  });
+
+  // Show the actual crop that will be uploaded, not the original —
+  // otherwise the first surprise comes after it is already live.
+  fileIn.addEventListener('change', async () => {
+    preview.innerHTML = '';
+    clearAlert(alert);
+    const file = fileIn.files[0];
+    if (!file) return;
+
+    try {
+      const blob = await resizeImageFile(file);
+      const url  = URL.createObjectURL(blob);
+      preview.innerHTML =
+        `<p class="form-note" style="margin-bottom:8px">This is what goes up ` +
+        `(${Math.round(blob.size / 1024)} KB):</p>` +
+        `<img src="${url}" alt="Preview of the photo to upload"
+              style="width:150px;aspect-ratio:4/5;object-fit:cover;
+                     border:1px solid var(--line);border-radius:var(--r)">`;
+    } catch (err) {
+      showAlert(alert, err.message);
+    }
+  });
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    clearAlert(alert);
+
+    const file = fileIn.files[0];
+    if (!file) { showAlert(alert, 'Pick a photo first.'); return; }
+
+    const btn = document.getElementById('photo-submit');
+    btn.disabled = true;
+    btn.textContent = 'Uploading…';
+
+    try {
+      const blob = await resizeImageFile(file);
+      const result = await Data.addGalleryPhoto({
+        category: document.getElementById('photo-category').value,
+        label:    document.getElementById('photo-label').value.trim(),
+        blob
+      });
+
+      if (!result.ok) { showAlert(alert, result.error); return; }
+
+      modal.classList.remove('open');
+      toast('Photo added to the site.');
+      await loadGallery();
+    } catch (err) {
+      showAlert(alert, err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Upload';
+    }
+  });
 }
