@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initShopDetails();
   initSessionHeader();
   initModeBanner();
+  initMap();
 });
 
 /* ---------- mobile navigation ---------- */
@@ -33,15 +34,6 @@ function initShopDetails() {
     if (CONFIG.shop[key] !== undefined) el.textContent = CONFIG.shop[key];
   });
 
-  document.querySelectorAll('[data-barber]').forEach(el => {
-    const key = el.dataset.barber;
-    if (CONFIG.barber[key] !== undefined) el.textContent = CONFIG.barber[key];
-  });
-
-  document.querySelectorAll('[data-barber-ig]').forEach(a => {
-    a.href = CONFIG.barber.instagram;
-  });
-
   document.querySelectorAll('[data-tattoo]').forEach(el => {
     const key = el.dataset.tattoo;
     if (CONFIG.tattooArtist[key] !== undefined) el.textContent = CONFIG.tattooArtist[key];
@@ -56,6 +48,52 @@ function initShopDetails() {
   document.querySelectorAll('[data-mail]').forEach(a => {
     a.href = 'mailto:' + CONFIG.shop.email;
   });
+
+  /* Directions search on the shop's NAME, not its street address.
+     Accra addresses geocode unreliably, but the shop is a registered
+     Google place, so the name lands on the exact pin. On a phone this
+     opens the Maps app rather than a web page. */
+  const mapsQuery = `${CONFIG.shop.name} ${CONFIG.shop.subtitle}, ${CONFIG.shop.city}`;
+  document.querySelectorAll('[data-directions]').forEach(a => {
+    a.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(mapsQuery);
+  });
+}
+
+/* ---------- map, loaded only when asked for -------------------
+   A Google Maps iframe drags in a few hundred KB of script and
+   tiles and sets Google's cookies for every visitor. Most people
+   here want the address, the hours and a phone number - so the
+   map costs nothing until someone actually taps it.
+
+   The "Get directions" button beside it needs no iframe at all,
+   which is what a customer standing on the street actually wants. */
+function initMap() {
+  const host = document.querySelector('[data-map]');
+  if (!host || !CONFIG.shop.mapEmbed) return;
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'map-load';
+  btn.innerHTML =
+    `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor"
+          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+       <path d="M20 10c0 5.5-8 12-8 12s-8-6.5-8-12a8 8 0 0 1 16 0z"/>
+       <circle cx="12" cy="10" r="2.6"/>
+     </svg>
+     <span class="lbl">Show the map</span>
+     <span class="sub">Loads from Google</span>`;
+
+  btn.addEventListener('click', () => {
+    const frame = document.createElement('iframe');
+    frame.src = CONFIG.shop.mapEmbed;
+    frame.title = CONFIG.shop.name + ' ' + CONFIG.shop.subtitle + ' on Google Maps';
+    frame.loading = 'lazy';
+    frame.allowFullscreen = true;
+    frame.referrerPolicy = 'strict-origin-when-cross-origin';
+    host.replaceChildren(frame);
+  });
+
+  host.appendChild(btn);
 }
 
 /* ---------- header reflects who is signed in ---------- */
@@ -138,9 +176,40 @@ function esc(str) {
    No API, no cost, no account. Opens WhatsApp with the message
    pre-typed. In Ghana this is where confirmations actually get
    read, so it beats email as the primary channel.             */
+
+/* wa.me wants a full international number with no '+', no spaces and
+   crucially NO leading zero: 233241234567, never 0241234567.
+
+   Customers type the local form because that is exactly what the
+   form placeholder asks for ("024 000 0000"), so the shop's own
+   "WhatsApp this customer" buttons would otherwise open a dead
+   chat every time. Normalise here rather than nag the customer.
+
+   Order matters. The local trunk '0' is tested BEFORE the country
+   code, because a real local number like 0233456789 also happens
+   to start with '233' once the zero is gone - checking the country
+   code first would silently mangle it. */
+function whatsappNumber(phone) {
+  let digits = String(phone || '').replace(/[^0-9]/g, '');
+  const cc = String(CONFIG.shop.countryCode || '');
+
+  if (!digits) return '';
+
+  // 00 233 ... - the old-style international prefix
+  if (digits.startsWith('00')) return digits.slice(2);
+
+  // 024 123 4567 - local, drop the trunk zero and prepend the country
+  if (digits.startsWith('0')) return cc + digits.slice(1);
+
+  // already 233...
+  if (cc && digits.startsWith(cc)) return digits;
+
+  // bare subscriber number, no zero and no country code
+  return cc + digits;
+}
+
 function whatsappLink(phone, message) {
-  const clean = String(phone || '').replace(/[^0-9]/g, '');
-  return `https://wa.me/${clean}?text=${encodeURIComponent(message)}`;
+  return `https://wa.me/${whatsappNumber(phone)}?text=${encodeURIComponent(message)}`;
 }
 
 /* ---------- calendar file ------------------------------------

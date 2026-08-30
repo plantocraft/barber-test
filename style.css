@@ -34,6 +34,12 @@
 /* ---------- reset ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 
+/* The `hidden` attribute hides things only through a UA rule with
+   almost no specificity, so any inline `display` on the element beats
+   it and the thing stays on screen. Several panels here are toggled
+   with .hidden = true AND carry an inline display, so make it stick. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   font-family: var(--body);
@@ -671,6 +677,48 @@ footer li a:hover { color: var(--text); }
 .appt .n { color: var(--text); display: block; margin-top: 2px; }
 .appt .s { color: var(--text-dim); font-size: 0.72rem; }
 .day-empty { color: var(--text-dim); font-size: 0.76rem; padding: 14px 4px; text-align: center; }
+
+/* ---------- map ----------------------------------------------
+   Click-to-load: see initMap() for why the iframe is not just
+   dropped straight into the page. The placeholder is a faint
+   street grid so the panel reads as a map before it is one. */
+.map-embed {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(0deg,  #1c1c20 0 1px, transparent 1px 26px),
+    repeating-linear-gradient(90deg, #1c1c20 0 1px, transparent 1px 26px),
+    linear-gradient(160deg, #191a1d 0%, #0d0d0f 100%);
+}
+.map-embed iframe { display: block; width: 100%; height: 100%; border: 0; }
+
+.map-load {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--text);
+  font-family: var(--body);
+}
+.map-load svg { color: var(--text-dim); margin-bottom: 3px; transition: color 0.15s; }
+.map-load .lbl {
+  font-size: 0.74rem; font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase;
+}
+.map-load .sub { font-size: 0.68rem; color: var(--text-dim); }
+.map-load:hover svg { color: var(--text); }
+.map-load:hover .lbl { text-decoration: underline; text-underline-offset: 3px; }
 
 /* gallery manager (admin) */
 .gallery-manage { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
