@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tattoo Requests — Cheerful Giver Unisex Salon</title>
-<meta name="description" content="Send your tattoo idea to Cheerful Giver in Accra. We follow up to agree placement, size and a time in person.">
+<title>Tattsappeal Studios — Cheerful Giver Unisex Salon</title>
+<meta name="description" content="Tattsappeal Studios at Cheerful Giver, Accra. Send your tattoo idea. We follow up to agree placement, size and a time in person.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -22,7 +22,7 @@
       <ul class="nav-links">
         <li><a href="index.html">Home</a></li>
         <li><a href="services.html">Services</a></li>
-        <li><a href="tattoo.html" class="active">Tattoo</a></li>
+        <li><a href="tattoo.html" class="active">Tattsappeal</a></li>
         <li><a href="booking.html">Book</a></li>
         <li><a href="account.html" data-account-link>Login</a></li>
       </ul>
@@ -36,47 +36,28 @@
 </header>
 
 <!-- ============ HERO ============ -->
-<section class="section-tight" style="padding-top:70px;padding-bottom:0">
+<section class="hero hero--video">
+  <img class="hero-bg" src="tattoo-hero.jpg" alt="" width="720" height="1280">
+  <video class="hero-video" src="tattoo-hero.mp4" poster="tattoo-hero.jpg"
+         autoplay muted loop playsinline preload="auto"
+         aria-hidden="true" tabindex="-1"></video>
   <div class="container">
-    <span class="eyebrow">Tattoo &middot; New</span>
-    <h1 style="font-size:clamp(2.2rem,6vw,3.6rem);max-width:16ch">Got an idea? Tell us about it.</h1>
-    <p class="lead" style="margin-top:20px">
+    <span class="eyebrow">Tattsappeal Studios</span>
+    <h1>Got an idea? Tell us about it.</h1>
+    <p class="lead">
       This isn't a live time picker like a haircut — a tattoo can be thirty minutes
       or several sessions, so nobody's schedule works that way. Send the idea below
       and we'll follow up to talk placement, size and price, then agree a time in person.
     </p>
-  </div>
-</section>
-
-<!-- ============ HOW IT WORKS ============ -->
-<section>
-  <div class="container">
-    <div class="section-head">
-      <span class="eyebrow">How It Works</span>
-      <h2>Three steps, no guessing</h2>
-    </div>
-    <div class="grid-3">
-      <div class="step">
-        <div class="num">01</div>
-        <h3>Send your idea</h3>
-        <p>Describe it, tell us roughly where on the body and how big. A reference photo helps — mention it in the notes and bring it along.</p>
-      </div>
-      <div class="step">
-        <div class="num">02</div>
-        <h3>We follow up</h3>
-        <p>By phone or WhatsApp, usually within a day, to talk it through properly before anything is scheduled.</p>
-      </div>
-      <div class="step">
-        <div class="num">03</div>
-        <h3>Agree a time in person</h3>
-        <p>Once the design and size are clear, we lock in a real appointment — this request just starts that conversation.</p>
-      </div>
+    <div class="hero-actions">
+      <a href="#request" class="btn btn-solid">Send your idea</a>
+      <a href="#work" class="btn btn-ghost">See the work</a>
     </div>
   </div>
 </section>
 
 <!-- ============ SHOWCASE ============ -->
-<section class="section-light">
+<section class="section-light" id="work">
   <div class="container">
     <div class="section-head">
       <span class="eyebrow">The Work</span>
@@ -92,11 +73,31 @@
     <p class="form-note">
       Recent work from the chair. More gets added here as the portfolio grows.
     </p>
+
+    <!-- Hrefs and removal of unset handles are handled by initSocialLinks(). -->
+    <div class="social-links" data-social-row>
+      <span class="social-label">More work on</span>
+
+      <a class="social-icon" data-social="instagram" href="#">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2.5" y="2.5" width="19" height="19" rx="5.4"/>
+          <circle cx="12" cy="12" r="4.2"/>
+          <circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/>
+        </svg>
+      </a>
+
+      <a class="social-icon" data-social="tiktok" href="#">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+          <path d="M12.7 2h3.1c.2 1.6 1.1 2.9 2.5 3.5.6.3 1.3.4 2 .4v3.1c-1.6 0-3.1-.5-4.4-1.4v6.3c0 3.4-2.8 6.1-6.2 6.1S3.5 17.3 3.5 13.9s2.8-6.1 6.2-6.1c.3 0 .6 0 .9.1v3.2c-.3-.1-.6-.2-.9-.2-1.7 0-3 1.4-3 3s1.4 3 3 3 3-1.4 3-3V2z"/>
+        </svg>
+      </a>
+    </div>
   </div>
 </section>
 
 <!-- ============ REQUEST FORM ============ -->
-<section style="padding-top:20px">
+<section style="padding-top:20px" id="request">
   <div class="container" style="max-width:760px">
 
     <!-- ---------- FORM ---------- -->
@@ -147,8 +148,17 @@
             <input type="date" id="t-date" name="date">
           </div>
           <div class="field full">
+            <label for="t-reference">Reference picture (optional)</label>
+            <input type="file" id="t-reference" name="reference" accept="image/*">
+            <p class="form-note" style="margin-top:6px">
+              A drawing, a screenshot, or a photo of a tattoo you like. It gets
+              shrunk on your phone before it sends, and only the shop sees it.
+            </p>
+            <div id="t-reference-preview"></div>
+          </div>
+          <div class="field full">
             <label for="t-notes">Anything else (optional)</label>
-            <textarea id="t-notes" name="notes" placeholder="Budget range, availability, links to references…"></textarea>
+            <textarea id="t-notes" name="notes" placeholder="Budget range, availability…"></textarea>
           </div>
         </div>
 
@@ -197,10 +207,9 @@
         <h4>Explore</h4>
         <ul>
           <li><a href="services.html">Services</a></li>
-          <li><a href="tattoo.html">Tattoo</a></li>
+          <li><a href="tattoo.html">Tattsappeal</a></li>
           <li><a href="booking.html">Book a chair</a></li>
           <li><a href="account.html">My account</a></li>
-          <li><a href="admin.html" class="text-dim">Staff</a></li>
         </ul>
       </div>
       <div>

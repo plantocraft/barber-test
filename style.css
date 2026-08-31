@@ -107,6 +107,7 @@ header {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 .brand span {
   font-size: 0.58rem;
@@ -128,6 +129,14 @@ header {
 .nav-links a:hover, .nav-links a.active { color: var(--text); }
 
 .nav-right { display: flex; align-items: center; gap: 14px; }
+
+/* On a narrow phone the wordmark, "Book Now" and the burger cannot
+   share one row - the brand wrapped onto two lines. The button is
+   the thing to drop: the hero underneath already leads with the
+   same call, and every page keeps it in the open menu. */
+@media (max-width: 560px) {
+  .nav-right > .btn { display: none; }
+}
 
 .nav-toggle {
   display: flex; flex-direction: column; justify-content: center; gap: 5px;
@@ -213,32 +222,68 @@ section { padding: 90px 0; }
 .section-light h1, .section-light h2, .section-light h3 { color: var(--text-ink); }
 .section-tight { padding: 56px 0; }
 
-/* ---------- hero ---------- */
+/* ---------- hero ----------------------------------------------
+   Full bleed: one photograph fills the section and the copy sits
+   on it, bottom-aligned. A barbershop sells what it can show, and
+   the work used to be buried below the whole price list.
+
+   Bottom-aligned rather than centred so the headline sits in the
+   darkest part of the scrim, where contrast is safest. */
 .hero {
   position: relative;
   min-height: 84vh;
   display: flex;
-  align-items: center;
-  padding: 120px 0 100px;
-  background:
-    linear-gradient(180deg, rgba(10,10,11,0.55) 0%, rgba(10,10,11,0.92) 100%),
-    repeating-linear-gradient(115deg, #17171a 0 2px, #0f0f11 2px 5px);
+  align-items: flex-end;
+  padding: 130px 0 62px;
+  background: var(--ink);      /* ground under the photo while it loads */
   border-bottom: 1px solid var(--line);
   overflow: hidden;
 }
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Faces sit high in these crops; a centred crop decapitates them. */
+  object-position: 50% 32%;
+}
+
+/* Dark at the top so the sticky header stays legible over the photo,
+   dark again at the bottom so the headline and stats do. */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(10, 10, 11, 0.88) 0%,
+    rgba(10, 10, 11, 0.40) 28%,
+    rgba(10, 10, 11, 0.58) 60%,
+    rgba(10, 10, 11, 0.95) 100%);
+}
+
+.hero .container { position: relative; z-index: 1; }
+
 .hero h1 {
   font-size: clamp(2.9rem, 10vw, 6.4rem);
   font-weight: 700;
   letter-spacing: -0.01em;
   max-width: 15ch;
 }
-.hero .lead { margin: 26px 0 38px; font-size: 1.1rem; }
+/* Brighter than --text-dim: this sits on a photograph, not on flat ink. */
+.hero .lead { margin: 26px 0 38px; font-size: 1.1rem; color: #D9D9DE; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; }
 
 .hero-meta {
   display: flex; flex-wrap: wrap; gap: 30px;
   margin-top: 56px; padding-top: 28px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid rgba(250, 250, 250, 0.22);
+}
+/* Four items across a 375px phone wrap 3-then-1 and orphan the last
+   one. A 2x2 grid keeps them paired. */
+@media (max-width: 560px) {
+  .hero-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 26px; }
 }
 .hero-meta div span {
   display: block;
@@ -249,6 +294,44 @@ section { padding: 90px 0; }
   margin-bottom: 6px;
 }
 .hero-meta div strong { font-family: var(--display); font-size: 1.15rem; font-weight: 500; }
+
+/* ---------- video hero (Tattsappeal) --------------------------
+   Same full-bleed treatment as the home hero, with footage of the
+   studio behind it instead of a still. The poster image carries
+   the section on its own, so nothing depends on the video: if it
+   is still loading, blocked, or the visitor asked for less motion,
+   the page still looks finished.
+
+   The source is a portrait phone clip, so on a wide screen it is
+   cover-cropped to a band. object-position keeps that band on the
+   room rather than the ceiling. */
+.hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 55%;
+}
+
+/* The still sitting under the video is that video's own poster frame,
+   so it has to be cropped identically - otherwise the picture jumps
+   the moment playback starts. */
+.hero--video .hero-bg { object-position: 50% 55%; }
+
+/* Taller than the barbering hero on a wide screen. The clip is
+   portrait, so a short, wide box throws most of the frame away -
+   giving it height puts the chair and the trolley back in shot.
+   Phones already see almost the whole frame, so this is desktop only. */
+@media (min-width: 900px) {
+  .hero--video { min-height: 95vh; }
+}
+
+/* Someone who asks the OS for less motion gets the poster frame
+   instead - the still is already sitting underneath. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-video { display: none; }
+}
 
 /* ---------- marquee strip ---------- */
 .strip {
@@ -719,6 +802,80 @@ footer li a:hover { color: var(--text); }
 .map-load .sub { font-size: 0.68rem; color: var(--text-dim); }
 .map-load:hover svg { color: var(--text); }
 .map-load:hover .lbl { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------- social links --------------------------------------
+   Icons are inline SVG rather than an icon font or a CDN sprite:
+   one less request, and nothing to break if the CDN goes.
+
+   Colours follow the existing two-ground pattern in this file -
+   defaults suit the dark sections, .section-light overrides them,
+   so the row works wherever it is dropped. */
+.social-links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 26px;
+}
+.social-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.social-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--text);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.social-icon:hover,
+.social-icon:focus-visible {
+  background: var(--paper);
+  color: var(--text-ink);
+  border-color: var(--paper);
+}
+.social-icon:focus-visible { outline: 2px solid var(--paper); outline-offset: 2px; }
+
+.section-light .social-label { color: var(--text-ink-dim); }
+.section-light .social-icon  { border-color: var(--line-soft); color: var(--text-ink); }
+.section-light .social-icon:hover,
+.section-light .social-icon:focus-visible {
+  background: var(--ink);
+  color: var(--text);
+  border-color: var(--ink);
+}
+.section-light .social-icon:focus-visible { outline-color: var(--ink); }
+
+/* reference picture - on the request form, and on the dashboard card.
+   Contained rather than cropped in both places: it is the customer's
+   design, so it is shown whole. */
+.ref-preview {
+  max-width: 190px;
+  max-height: 190px;
+  width: auto;
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--ink-2);
+}
+.ref-thumb {
+  display: inline-block;
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+  background: var(--ink-3);
+  transition: border-color 0.15s;
+}
+.ref-thumb:hover { border-color: var(--paper); }
+.ref-thumb img { max-width: 130px; max-height: 130px; width: auto; height: auto; }
 
 /* gallery manager (admin) */
 .gallery-manage { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }

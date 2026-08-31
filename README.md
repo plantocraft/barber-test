@@ -73,6 +73,13 @@ shows up end to end:
   with WhatsApp/call links to start the follow-up.
 - The customer's account page shows their requests read-only — no
   cancel/reschedule, because there's no slot to move.
+- A request can carry one **reference picture**. The browser shrinks it
+  first, contained rather than cropped, because it is the customer's
+  design and cutting it to a tile shape would cut the drawing in half.
+  The file goes to a **private** `tattoo-refs` bucket, not the public
+  gallery one: a reference is often a photo of the customer's own body,
+  or artwork they want adapted. Staff read it through a signed link
+  that expires; there is no public URL to guess. See `schema.sql`.
 
 ---
 

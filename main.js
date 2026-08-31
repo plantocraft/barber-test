@@ -57,6 +57,38 @@ function initShopDetails() {
   document.querySelectorAll('[data-directions]').forEach(a => {
     a.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(mapsQuery);
   });
+
+  initSocialLinks();
+}
+
+/* ---------- social links -------------------------------------
+   Built from config rather than hard-coded, and an unset handle is
+   REMOVED rather than left pointing at a profile that doesn't
+   exist. A dead social icon on a shop's own page reads worse than
+   no icon at all. If every handle is blank the whole row goes. */
+function initSocialLinks() {
+  const BASE = {
+    instagram: { url: 'https://instagram.com/',      label: 'Instagram' },
+    tiktok:    { url: 'https://www.tiktok.com/@',    label: 'TikTok' }
+  };
+
+  document.querySelectorAll('[data-social]').forEach(a => {
+    const key = a.dataset.social;
+    const cfg = BASE[key];
+    const handle = String((CONFIG.tattooArtist || {})[key] || '').trim().replace(/^@/, '');
+
+    if (!cfg || !handle) { a.remove(); return; }
+
+    a.href = cfg.url + handle;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.setAttribute('aria-label', `${cfg.label} — @${handle}`);
+    a.title = `@${handle} on ${cfg.label}`;
+  });
+
+  document.querySelectorAll('[data-social-row]').forEach(row => {
+    if (!row.querySelector('[data-social]')) row.remove();
+  });
 }
 
 /* ---------- map, loaded only when asked for -------------------
@@ -375,6 +407,51 @@ function resizeImageFile(file, targetW = 800, targetH = 1000, quality = 0.78) {
     };
 
     // Most often an iPhone HEIC that this browser cannot decode.
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Could not read that image. Try saving it as a JPEG first.'));
+    };
+
+    img.src = url;
+  });
+}
+
+/* Same idea as resizeImageFile, but it never crops.
+
+   That distinction matters: a gallery photo is cover-cropped to a
+   fixed 4:5 tile because the grid has to line up. A reference photo
+   is the customer's actual design - cropping it to fit a shape would
+   cut the drawing in half. So this only ever scales down, keeps the
+   whole frame, and leaves the aspect alone. */
+function shrinkImageFile(file, maxEdge = 1200, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) {
+      reject(new Error('Pick an image file.'));
+      return;
+    }
+
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+
+      const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+      canvas.toBlob(
+        blob => blob ? resolve(blob) : reject(new Error('Could not process that image.')),
+        'image/jpeg',
+        quality
+      );
+    };
+
     img.onerror = () => {
       URL.revokeObjectURL(url);
       reject(new Error('Could not read that image. Try saving it as a JPEG first.'));

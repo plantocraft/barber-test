@@ -350,3 +350,55 @@ create policy "staff may delete gallery files"
   on storage.objects for delete
   to authenticated
   using (bucket_id = 'gallery' and public.is_staff());
+
+
+-- =============================================================
+-- TATTOO REFERENCE IMAGES
+--
+-- A customer describing a tattoo in words is guessing at what the
+-- artist will picture. One photo of the design they mean removes
+-- most of that, so the follow-up call starts from the same image.
+--
+-- This bucket is PRIVATE, unlike `gallery`. A reference is often a
+-- photo of the customer's own body, or someone else's artwork they
+-- want adapted - it is sent to the shop, not published by it. Staff
+-- read it through a short-lived signed URL; nobody else can read it
+-- at all, and there is no public URL to guess.
+--
+-- Re-runnable: safe to paste into a project where the rest of this
+-- file has already been run.
+-- =============================================================
+
+alter table public.tattoo_requests
+  add column if not exists reference_path text;
+
+-- The insert grant above is column-by-column, so the new column has
+-- to be added to it or an anonymous request carrying a photo fails.
+grant insert (reference_path) on public.tattoo_requests to anon;
+
+insert into storage.buckets (id, name, public)
+values ('tattoo-refs', 'tattoo-refs', false)
+on conflict (id) do nothing;
+
+-- Anyone may send one in, signed in or not - the request form itself
+-- is open to guests, so the photo that belongs to it must be too.
+drop policy if exists "anyone may attach a reference" on storage.objects;
+create policy "anyone may attach a reference"
+  on storage.objects for insert
+  to anon, authenticated
+  with check (bucket_id = 'tattoo-refs');
+
+-- Only staff may read them back. No customer-read policy: the person
+-- who sent the photo already has it, and the shop is the only party
+-- that needs it afterwards.
+drop policy if exists "staff may read references" on storage.objects;
+create policy "staff may read references"
+  on storage.objects for select
+  to authenticated
+  using (bucket_id = 'tattoo-refs' and public.is_staff());
+
+drop policy if exists "staff may delete references" on storage.objects;
+create policy "staff may delete references"
+  on storage.objects for delete
+  to authenticated
+  using (bucket_id = 'tattoo-refs' and public.is_staff());
