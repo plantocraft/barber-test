@@ -42,7 +42,14 @@ const CONFIG = {
      sells the shop and the craft, not a named person. */
   tattooArtist: {
     blurb: 'Every idea starts as a short conversation about placement, size and style - ' +
-           'the exact price and time get agreed once that’s clear, not from a price list.'
+           'the exact price and time get agreed once that’s clear, not from a price list.',
+
+    /* Social handles, with or without the leading @. Leave one blank
+       and its icon is removed rather than rendered as a dead link -
+       so an account that does not exist yet simply does not show.
+       `instagram` is the handle burned into the studio video. */
+    instagram: 'tattsappeal',
+    tiktok:    ''                          // TODO: confirm the TikTok handle with the shop
   },
 
   /* --- Trading hours -----------------------------------------

@@ -354,7 +354,7 @@ function renderTattooRequests() {
   if (label) label.textContent = 'Requests' + (pending ? ` (${pending} pending)` : '');
 
   if (tattooRequests.length === 0) {
-    host.innerHTML = '<div class="empty-day">No tattoo requests yet.</div>';
+    host.innerHTML = '<div class="empty-day">No Tattsappeal requests yet.</div>';
     return;
   }
 
@@ -362,11 +362,21 @@ function renderTattooRequests() {
     const followUp = `Hi ${r.customerName}, this is ${CONFIG.shop.name}. Following up on your ` +
       `tattoo idea: "${r.description}". When's good to talk it through?`;
 
+    // Private bucket, so this is a signed link that expires. If signing
+    // failed the row still renders - just without the picture.
+    const ref = r.referenceUrl
+      ? `<a href="${esc(r.referenceUrl)}" target="_blank" rel="noopener" class="ref-thumb"
+            title="Open the reference picture full size">
+           <img src="${esc(r.referenceUrl)}" alt="Reference picture from ${esc(r.customerName)}" loading="lazy">
+         </a>`
+      : (r.referencePath ? '<div class="what">Reference photo attached</div>' : '');
+
     return `
     <div class="booking-card">
       <div>
         <div class="when">${esc(r.customerName)} &middot; <span class="badge badge-${r.status}">${r.status}</span></div>
         <div class="what">${esc(r.description)}</div>
+        ${ref}
         <div class="what">
           ${r.placement ? esc(r.placement) + ' &middot; ' : ''}${r.sizeEstimate ? esc(r.sizeEstimate) : 'Size TBC'}
           ${r.preferredDate ? ' &middot; wants ' + prettyDate(r.preferredDate) : ''}
@@ -424,7 +434,7 @@ function renderGallery() {
     <div class="gallery-tile">
       <img src="${esc(p.url)}" alt="${esc(p.label || 'Gallery photo')}" loading="lazy">
       <div class="cap">
-        <span>${esc(p.label || (p.category === 'barber' ? 'Home page' : 'Tattoo page'))}</span>
+        <span>${esc(p.label || (p.category === 'barber' ? 'Home page' : 'Tattsappeal page'))}</span>
         <button class="btn btn-danger btn-sm" style="padding:5px 10px;font-size:0.6rem"
                 data-photo-delete="${esc(p.id)}">Remove</button>
       </div>

@@ -179,14 +179,28 @@ const Data = (() => {
 
     async createTattooRequest(req) {
       const list = read(LS.tattoo, []);
+      const { referenceBlob, ...rest } = req;
+
       const record = {
-        ...req,
+        ...rest,
         id: uid(),
         status: 'pending',
+        // No bucket in demo mode, so the shrunk photo rides along as a
+        // data URL - same trick as the gallery.
+        referenceUrl: referenceBlob ? await blobToDataUrl(referenceBlob) : null,
         createdAt: new Date().toISOString()
       };
       list.push(record);
-      write(LS.tattoo, list);
+
+      try {
+        write(LS.tattoo, list);
+      } catch {
+        return {
+          ok: false,
+          error: 'This browser is out of storage for demo requests. ' +
+                 'Send it without the photo, or connect Supabase.'
+        };
+      }
       return { ok: true, request: record };
     },
 
@@ -331,8 +345,31 @@ const Data = (() => {
       preferredDate: r.preferred_date,
       notes: r.notes,
       status: r.status,
+      referencePath: r.reference_path,
+      referenceUrl: null,          // filled in for staff, see signReferences()
       createdAt: r.created_at
     };
+  }
+
+  /* The reference bucket is private, so there is no public URL to
+     build - a link has to be signed. Done in one round trip for the
+     whole list rather than one per row. Only staff can sign these;
+     for anyone else the call fails and the photo simply stays hidden. */
+  async function signReferences(requests) {
+    const paths = requests.map(r => r.referencePath).filter(Boolean);
+    if (!paths.length) return requests;
+
+    const { data, error } = await client().storage
+      .from('tattoo-refs')
+      .createSignedUrls(paths, 60 * 60);        // an hour is plenty for a dashboard session
+
+    if (error || !data) return requests;
+
+    const byPath = new Map(data.filter(d => d.signedUrl).map(d => [d.path, d.signedUrl]));
+    requests.forEach(r => {
+      if (r.referencePath) r.referenceUrl = byPath.get(r.referencePath) || null;
+    });
+    return requests;
   }
 
   const supabaseAdapter = {
@@ -461,6 +498,20 @@ const Data = (() => {
       // so the id is generated here rather than read back.
       const id = crypto.randomUUID();
 
+      // Photo first. If it fails the customer still has their typed
+      // request in front of them and can send it without the picture,
+      // which is better than losing the lot.
+      let referencePath = null;
+      if (req.referenceBlob) {
+        referencePath = `${id}.jpg`;
+        const { error: upErr } = await client().storage
+          .from('tattoo-refs')
+          .upload(referencePath, req.referenceBlob, { contentType: 'image/jpeg' });
+        if (upErr) {
+          return { ok: false, error: 'Could not upload the photo: ' + upErr.message };
+        }
+      }
+
       const { error } = await client().from('tattoo_requests').insert({
         id,
         user_id:        req.userId || null,
@@ -471,13 +522,18 @@ const Data = (() => {
         placement:      req.placement || '',
         size_estimate:  req.sizeEstimate || '',
         preferred_date: req.preferredDate || null,
-        notes:          req.notes || ''
+        notes:          req.notes || '',
+        reference_path: referencePath
         // status is NOT set here: anon has no insert grant on it,
         // so the column default of 'pending' applies.
       });
 
-      if (error) return { ok: false, error: error.message };
-      return { ok: true, request: { ...req, id, status: 'pending' } };
+      // A photo with no row pointing at it is invisible and permanent.
+      if (error) {
+        if (referencePath) await client().storage.from('tattoo-refs').remove([referencePath]);
+        return { ok: false, error: error.message };
+      }
+      return { ok: true, request: { ...req, id, status: 'pending', referencePath } };
     },
 
     async getMyTattooRequests(userId) {
@@ -492,7 +548,7 @@ const Data = (() => {
       const { data, error } = await client()
         .from('tattoo_requests').select('*').order('created_at', { ascending: false });
       if (error) { console.error(error); return []; }
-      return data.map(fromTattooRow);
+      return signReferences(data.map(fromTattooRow));
     },
 
     async setTattooRequestStatus(id, status) {

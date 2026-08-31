@@ -177,7 +177,7 @@ async function renderTattooRequests() {
 
   host.innerHTML = requests.length
     ? requests.map(tattooCard).join('')
-    : `<div class="empty-day">No tattoo requests yet.
+    : `<div class="empty-day">No Tattsappeal requests yet.
          <a href="tattoo.html" style="text-decoration:underline">Send one</a>.</div>`;
 }
 
