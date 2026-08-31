@@ -49,7 +49,7 @@ const CONFIG = {
        so an account that does not exist yet simply does not show.
        `instagram` is the handle burned into the studio video. */
     instagram: 'tattsappeal',
-    tiktok:    ''                          // TODO: confirm the TikTok handle with the shop
+    tiktok:    'tattsappeal'
   },
 
   /* --- Trading hours -----------------------------------------

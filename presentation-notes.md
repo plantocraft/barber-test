@@ -1,4 +1,198 @@
-# Presentation notes — the decisions, not the code
+# Presentation notes
+
+**Part One** sets up the project: goal, objectives, deliverables, and the
+SDLC methods actually used. **Part Two** is the decisions behind the build.
+Present Part One first, then demo, then use Part Two to answer "why did
+you do it that way".
+
+Vocabulary throughout is from Sessions 1–4, so the mapping is explicit.
+
+---
+
+# PART ONE — Goal, objectives, deliverables, method
+
+## A. The goal
+
+> Replace phone-and-walk-in scheduling at Cheerful Giver Unisex Salon
+> with an online booking system that shows **genuine live availability**,
+> so customers stop ringing to ask what's free and the barber stops
+> losing the chair to double-bookings and no-shows.
+
+One sentence, one outcome. Everything below serves it.
+
+**Why a goal and not a feature list:** Session 1 says a requirements
+statement is *the agreement on what work will be done*. The goal is what
+that agreement is measured against — a feature is only justified if it
+moves this sentence.
+
+---
+
+## B. Objectives
+
+Deliberately written so each one can be shown working in the demo.
+
+| # | Objective | How it's proved |
+|---|---|---|
+| 1 | Show real availability for a rolling 14-day window, derived from trading hours, the daily break, owner closures and existing bookings | Slot grid — greyed slots are genuinely unavailable, not decorative |
+| 2 | Make double-booking **impossible**, not merely discouraged | Unique index in Postgres; two browsers booking 3:00 PM — one wins, one is told to pick again |
+| 3 | Let a customer book in under a minute with no account | Three steps, guest checkout |
+| 4 | Give the owner one screen to run the week | Dashboard: week view, walk-ins, close a day, mark done / no-show |
+| 5 | Capture tattoo enquiries that do **not** fit the fixed-slot model | Tattsappeal request form with reference photo |
+| 6 | Let the owner change photos and content without a developer | Gallery upload in the dashboard; `config.js` as single source of truth |
+| 7 | Cost the shop nothing to run | GitHub Pages + Supabase free tier — ₵0/month |
+| 8 | Work on a mid-range Android phone on mobile data | Images shrunk in-browser before upload; click-to-load map |
+
+---
+
+## C. Deliverables
+
+Session 1: *"each phase produces a deliverable"*. Mapped to what exists
+in this repository.
+
+| Phase | Deliverable | Where it is |
+|---|---|---|
+| Preliminary Investigation | Feasibility decision (technical / time / budget) | Section A of Part Two |
+| Analysis | Scope decisions, incl. the braiding cut and the tattoo split | Part Two §2, README |
+| Design | Interface sketches → six pages; the availability **algorithm**; the data model | `*.html`, `slots.js`, `schema.sql` |
+| Development | Working system: 6 pages, 9 JS modules, 2 storage adapters | this repository |
+| Development | Test evidence | Part Two §11 |
+| Implementation | Deployment + handover documentation | `README.md` |
+| Maintenance | Owner-editable content; outstanding TODO list | dashboard; end of `README.md` |
+
+---
+
+## D. SDLC methods used
+
+### D1. Where this project sits: adaptive, not predictive
+
+Session 2 draws the line at one question — *can the project be fully
+planned in advance?*
+
+Here it demonstrably could not, and the evidence is in the project's own
+history:
+
+- The **tattoo side did not exist** in the original requirements. It
+  arrived after a conversation with the owner, mid-build.
+- It was then **renamed** to Tattsappeal Studios — after the pages,
+  navigation and database table were already written.
+- The hero video was **replaced three times** as better footage arrived.
+- A **reference-photo upload** was requested only once the request form
+  already existed and had been reviewed.
+
+Under Waterfall each of those is "swimming upstream" against a frozen
+specification. Under an adaptive approach each is a normal iteration.
+**The requirements genuinely were not knowable up front — so a predictive
+model would have been the wrong choice, not merely a slower one.**
+
+### D2. The six phases (Session 1), as actually executed
+
+1. **Preliminary Investigation** — Yes/No on three factors.
+   *Technical:* static hosting plus a free hosted Postgres is sufficient — no
+   server needed. *Time:* deliverable by 1 September. *Budgetary:* ₵0, versus
+   Squire/Booksy charging per chair in dollars. → **Proceed.**
+2. **Analysis** — studied the real shop: one chair, one barber, unisex,
+   cash and MoMo, customers on WhatsApp. This produced the scope cut in §2.
+3. **Design** — see D3.
+4. **Development** — built and tested, including the bug in §4 that
+   testing caught and reading the code did not.
+5. **Implementation** — see D5.
+6. **Maintenance** — see D6.
+
+### D3. Design: Output → Input → Processing → Storage
+
+Session 1 says design covers four components and that **output is designed
+first, because it clarifies what input is needed.** That is exactly the
+order used, and it is worth showing because it explains the architecture:
+
+- **Output first** — the slot grid. Deciding that a customer must see
+  *which specific times are free* is what forced everything else.
+- **Input** — only then: service → date → time → name and phone.
+- **Processing** — `availableSlots()`: the six checks a slot must survive.
+- **Storage** — two tables, one view, one unique index; and the deliberate
+  split between what is public and what is not (§5).
+
+Had input been designed first, the natural build is a "request a time"
+form — which is the *tattoo* flow, and precisely the wrong shape for a
+25-minute haircut.
+
+### D4. Extreme Prototyping — the model that fits best
+
+Session 4 describes Extreme Prototyping as a web-development model with
+three sequential phases. This project followed it almost exactly:
+
+| Course phase | What was built here |
+|---|---|
+| 1. Basic static HTML prototype of all pages | The six pages, styled, no logic |
+| 2. Simulate data processing with a prototype services layer | `data.js` **local adapter** — real behaviour backed by `localStorage` |
+| 3. Implement and integrate real services | `data.js` **supabase adapter** — same interface, real Postgres |
+
+Both adapters still exist and are swapped with **one line** in `config.js`.
+That is also **Evolutionary Prototyping** (Session 4): the prototype was
+not thrown away — it became the foundation the real system grew from, and
+it still earns its keep as offline demo mode.
+
+### D5. Implementation: Parallel conversion
+
+Session 1 lists four conversion styles — Direct, Parallel, Phased, Pilot.
+This system uses **Parallel**, and the choice is visible in the software:
+
+The shop does **not** stop taking walk-ins and phone bookings the day the
+site goes live. Old and new run side by side. That is exactly why the
+dashboard has an **"+ Walk-in"** button — a customer who walks in off the
+street is entered by the owner and immediately occupies the same calendar,
+so the online slots update.
+
+**Without parallel-conversion support the system would have been abandoned
+in week one**, because the barber's real day is still mostly walk-ins.
+
+Direct conversion was rejected: a one-chair shop cannot risk losing a day's
+bookings to a cutover.
+
+### D6. Maintenance
+
+Session 1: *ongoing audits, periodic evaluation, adjustment to new conditions.*
+
+- Content the shop changes often — prices, hours, phone, address — lives
+  in `config.js` alone.
+- Photographs are updated by the **owner** through the dashboard, not by a
+  developer. This was added specifically so maintenance does not depend on
+  me remaining available.
+- Known outstanding items are listed honestly at the end of `README.md`.
+
+### D7. Models considered and rejected
+
+Being able to say why *not* is worth as much as the choice itself.
+
+| Model | Why not |
+|---|---|
+| **Waterfall** | Requirements demonstrably changed mid-build (D1). Freezing them would have excluded the entire tattoo side. |
+| **V-Model** | Needs clear, fixed, unambiguous requirements. Same objection, plus heavy test documentation for a solo project. |
+| **Spiral** | Built for medium-to-high risk and long cycles. The risk here is low and the schedule is weeks, so the overhead buys nothing. |
+| **RAD** | Closest rejected fit — but it assumes a team, domain experts on call and code-generation tooling. This was one developer. |
+| **Big Bang** | What this would have been *without* a method: start coding, hope. Named here because it is the honest default, and the thing the discipline is meant to prevent. |
+
+### D8. Honest limits of the method
+
+A solo student project cannot claim the parts of Agile that require a
+team. There were no daily stand-ups, no sprint ceremonies, no pair
+programming, no cross-functional team.
+
+What **was** genuinely used from the adaptive/Agile side:
+
+- **Working software over documentation** — every change was demonstrated
+  running, not described.
+- **Customer collaboration over contract** — the owner's input changed
+  scope repeatedly, and was allowed to.
+- **Responding to change** — see the four examples in D1.
+- **Iterations** — each feature was analysed, designed, built and tested
+  as a self-contained mini-project before the next began.
+
+Claiming full Scrum would be false. Claiming an adaptive, iterative,
+prototype-led process is exactly what happened.
+
+---
+
+# PART TWO — The decisions
 
 The course is about solving problems, so these are the problems, what
 was decided, and why. Each one is a slide's worth.
